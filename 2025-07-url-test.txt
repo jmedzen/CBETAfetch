@@ -1,0 +1,4 @@
+https://cbdata.dila.edu.tw/stable/download/text/T1833.txt.zip
+https://cbdata.dila.edu.tw/stable/download/text/T1834.txt.zip
+https://cbdata.dila.edu.tw/stable/download/text/CC000[1-6].txt.zip
+
