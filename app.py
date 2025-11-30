@@ -176,6 +176,7 @@ def convert_md():
     return jsonify({'status': 'started'})
 
 if __name__ == '__main__':
-    # Open browser automatically
-    threading.Timer(1.5, lambda: os.system('open http://127.0.0.1:10066')).start()
+    # Open browser automatically (cross-platform)
+    import webbrowser
+    threading.Timer(1.5, lambda: webbrowser.open('http://127.0.0.1:10066')).start()
     app.run(port=10066, debug=True, use_reloader=False)
