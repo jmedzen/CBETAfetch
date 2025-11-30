@@ -12,7 +12,7 @@ class SutraDownloader:
         self.stop_event = threading.Event()
         self.executor = None
 
-    def download_file(self, url, progress_callback=None):
+    def download_file(self, url, progress_callback=None, log_progress_dots=False):
         if self.stop_event.is_set():
             return False, "Cancelled"
             
@@ -36,6 +36,8 @@ class SutraDownloader:
                 total_size = int(response.getheader('Content-Length') or 0)
                 block_size = 8192
                 wrote = 0
+                last_log_size = 0
+                log_interval = 5 * 1024 * 1024 # 5MB
                 
                 with open(filepath, 'wb') as f:
                     while True:
@@ -46,6 +48,11 @@ class SutraDownloader:
                             break
                         f.write(chunk)
                         wrote += len(chunk)
+                        
+                        if log_progress_dots and progress_callback:
+                            if wrote - last_log_size >= log_interval:
+                                progress_callback(".")
+                                last_log_size = wrote
             
             if self.stop_event.is_set():
                 if os.path.exists(filepath):

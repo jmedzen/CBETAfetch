@@ -4,7 +4,7 @@ import threading
 import time
 import json
 from downloader import SutraDownloader
-from process import process_project, convert_to_md
+from process import process_project, convert_to_md, process_cbeta_text_pack
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
@@ -15,7 +15,10 @@ lock = threading.Lock()
 
 def add_log(msg):
     with lock:
-        logs.append(f"{time.strftime('%H:%M:%S')} - {msg}")
+        if msg == ".":
+            logs.append(msg)
+        else:
+            logs.append(f"{time.strftime('%H:%M:%S')} - {msg}")
 
 def log_callback(msg):
     add_log(msg)
@@ -173,6 +176,43 @@ def convert_md():
         add_log("Conversion task completed.")
 
     threading.Thread(target=run_convert, daemon=True).start()
+    return jsonify({'status': 'started'})
+
+@app.route('/complete_process', methods=['POST'])
+def complete_process():
+    data = request.json
+    dest_dir = data.get('dest_dir')
+    pack_url = data.get('pack_url')
+
+    if not dest_dir or not pack_url:
+        return jsonify({'status': 'error', 'message': 'Missing arguments'}), 400
+
+    def run_complete_process():
+        add_log("Starting Complete Text Pack Process...")
+        
+        # 1. Download
+        downloader = SutraDownloader(dest_dir)
+        add_log(f"Downloading from {pack_url}...")
+        success, filename = downloader.download_file(pack_url, progress_callback=log_callback, log_progress_dots=True)
+        
+        if not success:
+            add_log(f"Download failed: {filename}")
+            return
+            
+        zip_path = os.path.join(dest_dir, filename)
+        add_log(f"Download successful: {zip_path}")
+        
+        # 2. Process (Unzip -> Combine -> Convert)
+        try:
+            process_cbeta_text_pack(zip_path, dest_dir, remove_zip=True, logger=log_callback)
+        except Exception as e:
+            add_log(f"Error during processing: {e}")
+            import traceback
+            add_log(traceback.format_exc())
+            
+        add_log("Complete Text Pack Process finished.")
+
+    threading.Thread(target=run_complete_process, daemon=True).start()
     return jsonify({'status': 'started'})
 
 if __name__ == '__main__':

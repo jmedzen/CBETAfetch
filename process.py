@@ -25,6 +25,7 @@ and then process all sub-directory in the project directory.
 
 """
 
+import os
 from os import listdir, getcwd, mkdir, remove, makedirs
 from os.path import isdir, isfile, join, basename, abspath, dirname
 from shutil import rmtree
@@ -197,6 +198,102 @@ def convert_to_md(working_dir, logger=default_logger):
             logger("Error converting %s: %s" % (f, e))
             
     logger("Conversion completed.")
+
+def process_cbeta_text_pack(zip_path, dest_dir, remove_zip=False, logger=default_logger):
+    """
+    Process the complete cbeta text pack.
+    1. Unzip the file
+    2. Walk through folders to find ID folders (leaf folders with txt files)
+    3. Process each folder
+    4. Convert to MD
+    """
+    if not isfile(zip_path):
+        logger(f"Zip file not found: {zip_path}")
+        return
+
+    # 1. Unzip
+    extract_dir = os.path.join(dest_dir, "cbeta-text")
+    if not isdir(extract_dir):
+        makedirs(extract_dir)
+    
+    logger(f"Unzipping {zip_path} to {extract_dir}...")
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            # Get total files for progress
+            total_files = len(zip_ref.namelist())
+            # Extract with simple progress logging
+            # zip_ref.extractall(extract_dir) # This is blocking and no progress
+            
+            # Manual extraction for progress if needed, but for speed let's just extractall
+            # and maybe log a "please wait"
+            zip_ref.extractall(extract_dir)
+            
+    except Exception as e:
+        logger(f"Error unzipping: {e}")
+        return
+
+    logger("Unzip completed. Starting processing...")
+    
+    # Setup output directory
+    # User requested output to be "./complete/" (relative to app root presumably, or sibling to downloads)
+    # If dest_dir is "./downloads", we want "./complete"
+    # So we should look at the parent of dest_dir if dest_dir is "downloads"
+    # But dest_dir can be anything. 
+    # The request says: Make sure output all combine txt files into "./complete/", not "./downloads/complete/"
+    # This implies if I run in project root, it should be project_root/complete.
+    # dest_dir is usually project_root/downloads.
+    
+    # Let's assume we want to place 'complete' as a sibling of 'downloads' if 'downloads' is the dest_dir.
+    # Or just hardcode to os.path.join(os.getcwd(), 'complete')?
+    # The user said "./complete/", which usually means relative to CWD (where app.py runs).
+    
+    output_dir = os.path.abspath("complete")
+    if not isdir(output_dir):
+        makedirs(output_dir)
+
+    # 2. Walk and Process
+    # The structure is extract_dir/{canon}/{ID}/...
+    # We want to find folders that contain .txt files
+    
+    folders_to_process = []
+    for root, dirs, files in os.walk(extract_dir):
+        # Check if this folder contains txt files and looks like an ID folder
+        txt_files = [f for f in files if f.endswith('.txt') and not f.startswith('.')]
+        if txt_files:
+            folders_to_process.append(root)
+    
+    total_folders = len(folders_to_process)
+    logger(f"Found {total_folders} folders to process.")
+    
+    for i, folder_path in enumerate(sorted(folders_to_process)):
+        folder_name = basename(folder_path)
+        # Calculate relative path or just use the folder as is
+        # process_folder expects (working_dir, name, output_dir)
+        # where working_dir/name is the target.
+        # So we can pass dirname(folder_path) as working_dir and basename as name
+        
+        parent = dirname(folder_path)
+        
+        # Log progress every 1% or at least every 10 files
+        if total_folders > 100:
+            if i % (total_folders // 100) == 0:
+                logger(f"Processing progress: {int(i/total_folders*100)}% ({i}/{total_folders})")
+        else:
+             logger(f"Processing {i+1}/{total_folders}: {folder_name}")
+
+        process_folder(parent, folder_name, output_dir, removeFolder=False, logger=logger)
+
+    logger("Processing completed. Starting conversion to MD...")
+    
+    # 4. Convert to MD
+    convert_to_md(output_dir, logger=logger)
+    
+    if remove_zip:
+        logger(f"Removing zip file: {zip_path}")
+        remove(zip_path)
+        
+    logger("All tasks completed successfully.")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'processing zip and combining txt files in it')

@@ -38,5 +38,8 @@
     "error_download": "開始下載時發生錯誤：",
     "error_process": "開始處理時發生錯誤：",
     "error_conversion": "開始轉換時發生錯誤：",
-    "language_selector_label": "語言"
+    "language_selector_label": "語言",
+    "download_complete_text_pack_button": "完整經文包處理",
+    "settings_complete_pack_url_label": "完整經文包網址",
+    "settings_complete_pack_url_placeholder": "https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
 }

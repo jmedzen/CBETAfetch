@@ -38,5 +38,8 @@
   "error_download": "Error starting download: ",
   "error_process": "Error starting process: ",
   "error_conversion": "Error starting conversion: ",
-  "language_selector_label": "Language"
+  "language_selector_label": "Language",
+  "download_complete_text_pack_button": "Complete Text Pack Process",
+  "settings_complete_pack_url_label": "Complete Text Pack URL",
+  "settings_complete_pack_url_placeholder": "https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
 }

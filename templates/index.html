@@ -105,6 +105,8 @@
                 </div>
                 <button class="btn btn-primary" onclick="startDownload()" data-i18n="download_button">Start
                     Download</button>
+                <button class="btn btn-info ms-2" onclick="startCompleteTextPack()"
+                    data-i18n="download_complete_text_pack_button">Complete Text Pack Process</button>
             </div>
 
             <!-- Process Tab -->
@@ -136,6 +138,14 @@
                     <input type="text" class="form-control" id="dest-dir"
                         data-i18n-placeholder="settings_dest_dir_placeholder" placeholder="e.g., ./downloads/"
                         value="./downloads/">
+                </div>
+                <div class="mb-3">
+                    <label for="complete-pack-url" class="form-label"
+                        data-i18n="settings_complete_pack_url_label">Complete Text Pack URL</label>
+                    <input type="text" class="form-control" id="complete-pack-url"
+                        data-i18n-placeholder="settings_complete_pack_url_placeholder"
+                        placeholder="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
+                        value="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip">
                 </div>
                 <div class="mb-3">
                     <label for="example-url" class="form-label" data-i18n="settings_txt_url_label">TXT URL
@@ -244,6 +254,14 @@
         const logArea = document.getElementById('log-area');
 
         function appendLog(msg) {
+            if (msg === ".") {
+                const lastDiv = logArea.lastElementChild;
+                if (lastDiv) {
+                    lastDiv.textContent += ".";
+                    logArea.scrollTop = logArea.scrollHeight;
+                    return;
+                }
+            }
             const div = document.createElement('div');
             div.textContent = msg;
             logArea.appendChild(div);
@@ -351,6 +369,35 @@
                 if (data.status === 'error') alert(data.message);
             } catch (e) {
                 alert("Error starting conversion: " + e);
+            }
+        }
+
+        async function startCompleteTextPack() {
+            const destDir = document.getElementById('dest-dir').value;
+            const packUrl = document.getElementById('complete-pack-url').value;
+
+            if (!destDir || !packUrl) {
+                alert("Please check Settings and ensure Download Destination and Complete Text Pack URL are set.");
+                return;
+            }
+
+            if (!confirm("This process will download a large file, unzip it, and process thousands of files. It may take a long time. Continue?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/complete_process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dest_dir: destDir,
+                        pack_url: packUrl
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'error') alert(data.message);
+            } catch (e) {
+                alert("Error starting complete process: " + e);
             }
         }
     </script>
