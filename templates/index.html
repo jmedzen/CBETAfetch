@@ -61,6 +61,10 @@
                     role="tab" data-i18n="tab_process">Process</button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="full-download-tab" data-bs-toggle="tab" data-bs-target="#full-download"
+                    type="button" role="tab" data-i18n="tab_full_download">Full Download</button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button"
                     role="tab" data-i18n="tab_settings">Settings</button>
             </li>
@@ -105,8 +109,6 @@
                 </div>
                 <button class="btn btn-primary" onclick="startDownload()" data-i18n="download_button">Start
                     Download</button>
-                <button class="btn btn-info ms-2" onclick="startCompleteTextPack()"
-                    data-i18n="download_complete_text_pack_button">Complete Text Pack Process</button>
             </div>
 
             <!-- Process Tab -->
@@ -130,6 +132,26 @@
                     data-i18n="process_convert_button">Convert to MD</button>
             </div>
 
+            <!-- Full Download Tab -->
+            <div class="tab-pane fade" id="full-download" role="tabpanel">
+                <div class="mb-3">
+                    <label for="complete-pack-url" class="form-label"
+                        data-i18n="settings_complete_pack_url_label">Complete Text Pack URL</label>
+                    <input type="text" class="form-control" id="complete-pack-url"
+                        data-i18n-placeholder="settings_complete_pack_url_placeholder"
+                        placeholder="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
+                        value="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip">
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="convert-md" checked>
+                    <label class="form-check-label" for="convert-md" data-i18n="full_download_convert_md_label">
+                        Convert to MD
+                    </label>
+                </div>
+                <button class="btn btn-info" onclick="startCompleteTextPack()"
+                    data-i18n="download_complete_text_pack_button">Complete Text Pack Process</button>
+            </div>
+
             <!-- Settings Tab -->
             <div class="tab-pane fade" id="settings" role="tabpanel">
                 <div class="mb-3">
@@ -139,14 +161,7 @@
                         data-i18n-placeholder="settings_dest_dir_placeholder" placeholder="e.g., ./downloads/"
                         value="./downloads/">
                 </div>
-                <div class="mb-3">
-                    <label for="complete-pack-url" class="form-label"
-                        data-i18n="settings_complete_pack_url_label">Complete Text Pack URL</label>
-                    <input type="text" class="form-control" id="complete-pack-url"
-                        data-i18n-placeholder="settings_complete_pack_url_placeholder"
-                        placeholder="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
-                        value="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip">
-                </div>
+
                 <div class="mb-3">
                     <label for="example-url" class="form-label" data-i18n="settings_txt_url_label">TXT URL
                         (Optional)</label>
@@ -375,6 +390,7 @@
         async function startCompleteTextPack() {
             const destDir = document.getElementById('dest-dir').value;
             const packUrl = document.getElementById('complete-pack-url').value;
+            const convertMd = document.getElementById('convert-md').checked;
 
             if (!destDir || !packUrl) {
                 alert("Please check Settings and ensure Download Destination and Complete Text Pack URL are set.");
@@ -391,7 +407,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         dest_dir: destDir,
-                        pack_url: packUrl
+                        pack_url: packUrl,
+                        convert_md: convertMd
                     })
                 });
                 const data = await res.json();

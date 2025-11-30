@@ -199,7 +199,7 @@ def convert_to_md(working_dir, logger=default_logger):
             
     logger("Conversion completed.")
 
-def process_cbeta_text_pack(zip_path, dest_dir, remove_zip=False, logger=default_logger):
+def process_cbeta_text_pack(zip_path, dest_dir, remove_zip=False, convert_md=True, logger=default_logger):
     """
     Process the complete cbeta text pack.
     1. Unzip the file
@@ -286,7 +286,10 @@ def process_cbeta_text_pack(zip_path, dest_dir, remove_zip=False, logger=default
     logger("Processing completed. Starting conversion to MD...")
     
     # 4. Convert to MD
-    convert_to_md(output_dir, logger=logger)
+    if convert_md:
+        convert_to_md(output_dir, logger=logger)
+    else:
+        logger("Skipping conversion to MD as requested.")
     
     if remove_zip:
         logger(f"Removing zip file: {zip_path}")

@@ -2,6 +2,7 @@
     "app_title": "CBETA 經文下載與處理工具",
     "tab_download": "下載",
     "tab_process": "處理",
+    "tab_full_download": "完整下載",
     "tab_settings": "設定",
     "download_id_list_label": "經文編號列表（每行一個。多檔案請輸入範圍如 T1500-T1505）",
     "download_id_list_placeholder": "T1585\nT1586-T1590",
@@ -41,5 +42,6 @@
     "language_selector_label": "語言",
     "download_complete_text_pack_button": "完整經文包處理",
     "settings_complete_pack_url_label": "完整經文包網址",
-    "settings_complete_pack_url_placeholder": "https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
+    "settings_complete_pack_url_placeholder": "https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip",
+    "full_download_convert_md_label": "轉換為 MD"
 }

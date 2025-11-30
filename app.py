@@ -184,6 +184,8 @@ def complete_process():
     dest_dir = data.get('dest_dir')
     pack_url = data.get('pack_url')
 
+    convert_md = data.get('convert_md', True)
+
     if not dest_dir or not pack_url:
         return jsonify({'status': 'error', 'message': 'Missing arguments'}), 400
 
@@ -204,7 +206,7 @@ def complete_process():
         
         # 2. Process (Unzip -> Combine -> Convert)
         try:
-            process_cbeta_text_pack(zip_path, dest_dir, remove_zip=True, logger=log_callback)
+            process_cbeta_text_pack(zip_path, dest_dir, remove_zip=True, convert_md=convert_md, logger=log_callback)
         except Exception as e:
             add_log(f"Error during processing: {e}")
             import traceback

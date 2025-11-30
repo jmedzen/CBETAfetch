@@ -2,6 +2,7 @@
   "app_title": "CBETA Sutra Downloader & Processor",
   "tab_download": "Download",
   "tab_process": "Process",
+  "tab_full_download": "Full Download",
   "tab_settings": "Settings",
   "download_id_list_label": "ID List (One per line, supports ranges e.g. T1500-T1505)",
   "download_id_list_placeholder": "T1585\nT1586-T1590",
@@ -41,5 +42,6 @@
   "language_selector_label": "Language",
   "download_complete_text_pack_button": "Complete Text Pack Process",
   "settings_complete_pack_url_label": "Complete Text Pack URL",
-  "settings_complete_pack_url_placeholder": "https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
+  "settings_complete_pack_url_placeholder": "https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip",
+  "full_download_convert_md_label": "Convert to MD"
 }
