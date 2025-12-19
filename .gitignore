@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Project specific
+downloads/
+complete/
+*.zip
+
+# OS specific
+.DS_Store
+Thumbs.db
