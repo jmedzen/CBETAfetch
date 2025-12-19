@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBETA Sutra Downloader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #log-area {
+            height: 300px;
+            overflow-y: scroll;
+            background: #212529;
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-center flex-grow-1" data-i18n="app_title">CBETA Sutra Downloader & Processor</h2>
+            <div class="ms-3">
+                <label for="language-selector" class="form-label mb-1"
+                    data-i18n="language_selector_label">Language</label>
+                <select id="language-selector" class="form-select form-select-sm">
+                    <option value="en">English</option>
+                    <option value="zh-TW">繁體中文</option>
+                </select>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="download-tab" data-bs-toggle="tab" data-bs-target="#download"
+                    type="button" role="tab" data-i18n="tab_download">Download</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="process-tab" data-bs-toggle="tab" data-bs-target="#process" type="button"
+                    role="tab" data-i18n="tab_process">Process</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="full-download-tab" data-bs-toggle="tab" data-bs-target="#full-download"
+                    type="button" role="tab" data-i18n="tab_full_download">Full Download</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button"
+                    role="tab" data-i18n="tab_settings">Settings</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+            <!-- Download Tab -->
+            <div class="tab-pane fade show active" id="download" role="tabpanel">
+                <div class="mb-3">
+                    <label for="id-list" class="form-label" data-i18n="download_id_list_label">ID List (One per line,
+                        supports ranges e.g.
+                        T1500-T1505)</label>
+                    <textarea class="form-control" id="id-list" rows="10"
+                        data-i18n-placeholder="download_id_list_placeholder"
+                        placeholder="T1585&#10;T1586-T1590"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" data-i18n="download_formats_label">Formats to Download</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="fmt-txt" value="txt" checked>
+                            <label class="form-check-label" for="fmt-txt">TXT</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="fmt-html" value="html">
+                            <label class="form-check-label" for="fmt-html">HTML</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="fmt-pdf" value="pdf">
+                            <label class="form-check-label" for="fmt-pdf">PDF</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="fmt-epub" value="epub">
+                            <label class="form-check-label" for="fmt-epub">EPUB</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="fmt-mobi" value="mobi">
+                            <label class="form-check-label" for="fmt-mobi">Mobi</label>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="startDownload()" data-i18n="download_button">Start
+                    Download</button>
+            </div>
+
+            <!-- Process Tab -->
+            <div class="tab-pane fade" id="process" role="tabpanel">
+                <div class="mb-3">
+                    <label for="project-dir" class="form-label" data-i18n="process_project_dir_label">Project Directory
+                        (containing zips)</label>
+                    <input type="text" class="form-control" id="project-dir"
+                        data-i18n-placeholder="process_project_dir_placeholder" placeholder="e.g., ./downloads/"
+                        value="./downloads/">
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="remove-zip" checked>
+                    <label class="form-check-label" for="remove-zip" data-i18n="process_remove_zip_label">
+                        Remove Zip files after extraction
+                    </label>
+                </div>
+                <button class="btn btn-success" onclick="startProcess()" data-i18n="process_combine_button">Combine txt
+                    files</button>
+                <button class="btn btn-warning ms-2" onclick="startConvertMD()"
+                    data-i18n="process_convert_button">Convert to MD</button>
+            </div>
+
+            <!-- Full Download Tab -->
+            <div class="tab-pane fade" id="full-download" role="tabpanel">
+                <div class="mb-3">
+                    <label for="complete-pack-url" class="form-label"
+                        data-i18n="settings_complete_pack_url_label">Complete Text Pack URL</label>
+                    <input type="text" class="form-control" id="complete-pack-url"
+                        data-i18n-placeholder="settings_complete_pack_url_placeholder"
+                        placeholder="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
+                        value="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip">
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="convert-md" checked>
+                    <label class="form-check-label" for="convert-md" data-i18n="full_download_convert_md_label">
+                        Convert to MD
+                    </label>
+                </div>
+                <button class="btn btn-info" onclick="startCompleteTextPack()"
+                    data-i18n="download_complete_text_pack_button">Complete Text Pack Process</button>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="mb-3">
+                    <label for="dest-dir" class="form-label" data-i18n="settings_dest_dir_label">Download
+                        Destination</label>
+                    <input type="text" class="form-control" id="dest-dir"
+                        data-i18n-placeholder="settings_dest_dir_placeholder" placeholder="e.g., ./downloads/"
+                        value="./downloads/">
+                </div>
+
+                <div class="mb-3">
+                    <label for="example-url" class="form-label" data-i18n="settings_txt_url_label">TXT URL
+                        (Optional)</label>
+                    <input type="text" class="form-control" id="example-url"
+                        data-i18n-placeholder="settings_txt_url_placeholder"
+                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/text/T2107.txt.zip">
+                    <div class="form-text" data-i18n="settings_txt_url_help">If provided, the app will use the base path
+                        from this URL for all files in
+                        the list.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="html-url" class="form-label" data-i18n="settings_html_url_label">HTML URL
+                        (Optional)</label>
+                    <input type="text" class="form-control" id="html-url"
+                        data-i18n-placeholder="settings_html_url_placeholder"
+                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/html/T2107.html.zip">
+                </div>
+                <div class="mb-3">
+                    <label for="pdf-url" class="form-label" data-i18n="settings_pdf_url_label">PDF URL
+                        (Optional)</label>
+                    <input type="text" class="form-control" id="pdf-url"
+                        data-i18n-placeholder="settings_pdf_url_placeholder"
+                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/pdf/T/T2107.pdf">
+                </div>
+                <div class="mb-3">
+                    <label for="epub-url" class="form-label" data-i18n="settings_epub_url_label">EPUB URL
+                        (Optional)</label>
+                    <input type="text" class="form-control" id="epub-url"
+                        data-i18n-placeholder="settings_epub_url_placeholder"
+                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/epub/T/T2107.epub">
+                </div>
+                <div class="mb-3">
+                    <label for="mobi-url" class="form-label" data-i18n="settings_mobi_url_label">MOBI URL
+                        (Optional)</label>
+                    <input type="text" class="form-control" id="mobi-url"
+                        data-i18n-placeholder="settings_mobi_url_placeholder"
+                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/mobi/T/T2107.mobi">
+                </div>
+            </div>
+        </div>
+
+        <div id="log-area" data-i18n="log_area_default">Logs will appear here...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Internationalization support
+        let currentLang = localStorage.getItem('language') || detectBrowserLanguage();
+        let translations = {};
+
+        function detectBrowserLanguage() {
+            // Get browser language
+            const browserLang = navigator.language || navigator.userLanguage;
+
+            // Map browser language to supported languages
+            if (browserLang.startsWith('zh')) {
+                return 'zh-TW';
+            }
+
+            // Default to English
+            return 'en';
+        }
+
+        async function loadLanguage(lang) {
+            try {
+                const response = await fetch(`/static/lang/${lang}.json`);
+                translations = await response.json();
+                applyTranslations();
+                localStorage.setItem('language', lang);
+                currentLang = lang;
+            } catch (e) {
+                console.error('Error loading language file:', e);
+            }
+        }
+
+        function applyTranslations() {
+            // Apply translations to elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[key]) {
+                    el.textContent = translations[key];
+                }
+            });
+
+            // Apply translations to placeholders
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[key]) {
+                    el.placeholder = translations[key];
+                }
+            });
+        }
+
+        // Initialize language
+        document.addEventListener('DOMContentLoaded', () => {
+            const selector = document.getElementById('language-selector');
+            selector.value = currentLang;
+            loadLanguage(currentLang);
+
+            selector.addEventListener('change', (e) => {
+                loadLanguage(e.target.value);
+            });
+        });
+
+        const logArea = document.getElementById('log-area');
+
+        function appendLog(msg) {
+            if (msg === ".") {
+                const lastDiv = logArea.lastElementChild;
+                if (lastDiv) {
+                    lastDiv.textContent += ".";
+                    logArea.scrollTop = logArea.scrollHeight;
+                    return;
+                }
+            }
+            const div = document.createElement('div');
+            div.textContent = msg;
+            logArea.appendChild(div);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Connect to SSE for logs
+        const evtSource = new EventSource("/logs");
+        evtSource.onmessage = function (event) {
+            const logs = JSON.parse(event.data);
+            logs.forEach(appendLog);
+        };
+
+        async function startDownload() {
+            const idList = document.getElementById('id-list').value;
+            const destDir = document.getElementById('dest-dir').value;
+            const exampleUrl = document.getElementById('example-url').value;
+            const htmlUrl = document.getElementById('html-url').value;
+            const pdfUrl = document.getElementById('pdf-url').value;
+            const epubUrl = document.getElementById('epub-url').value;
+            const mobiUrl = document.getElementById('mobi-url').value;
+
+            // Collect selected formats
+            const formats = [];
+            if (document.getElementById('fmt-txt').checked) formats.push('txt');
+            if (document.getElementById('fmt-html').checked) formats.push('html');
+            if (document.getElementById('fmt-pdf').checked) formats.push('pdf');
+            if (document.getElementById('fmt-epub').checked) formats.push('epub');
+            if (document.getElementById('fmt-mobi').checked) formats.push('mobi');
+
+            if (!idList || !destDir) {
+                alert("Please fill in all required fields");
+                return;
+            }
+
+            if (formats.length === 0) {
+                alert("Please select at least one format");
+                return;
+            }
+
+            try {
+                const res = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_list: idList,
+                        dest_dir: destDir,
+                        example_url: exampleUrl,
+                        html_url: htmlUrl,
+                        pdf_url: pdfUrl,
+                        epub_url: epubUrl,
+                        mobi_url: mobiUrl,
+                        formats: formats
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'error') alert(data.message);
+            } catch (e) {
+                alert("Error starting download: " + e);
+            }
+        }
+
+        async function startProcess() {
+            const projectDir = document.getElementById('project-dir').value;
+            const removeZip = document.getElementById('remove-zip').checked;
+
+            if (!projectDir) {
+                alert("Please fill in all fields");
+                return;
+            }
+
+            try {
+                const res = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_dir: projectDir, remove_zip: removeZip })
+                });
+                const data = await res.json();
+                if (data.status === 'error') alert(data.message);
+            } catch (e) {
+                alert("Error starting process: " + e);
+            }
+        }
+
+        async function startConvertMD() {
+            const projectDir = document.getElementById('project-dir').value;
+
+            if (!projectDir) {
+                alert("Please select a Project directory");
+                return;
+            }
+
+            if (!confirm("This will convert all .txt files in the 'complete' folder to .md and replace '#' with '//'. Continue?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/convert_md', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_dir: projectDir })
+                });
+                const data = await res.json();
+                if (data.status === 'error') alert(data.message);
+            } catch (e) {
+                alert("Error starting conversion: " + e);
+            }
+        }
+
+        async function startCompleteTextPack() {
+            const destDir = document.getElementById('dest-dir').value;
+            const packUrl = document.getElementById('complete-pack-url').value;
+            const convertMd = document.getElementById('convert-md').checked;
+
+            if (!destDir || !packUrl) {
+                alert("Please check Settings and ensure Download Destination and Complete Text Pack URL are set.");
+                return;
+            }
+
+            if (!confirm("This process will download a large file, unzip it, and process thousands of files. It may take a long time. Continue?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/complete_process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dest_dir: destDir,
+                        pack_url: packUrl,
+                        convert_md: convertMd
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'error') alert(data.message);
+            } catch (e) {
+                alert("Error starting complete process: " + e);
+            }
+        }
+    </script>
+</body>
+
+</html>
