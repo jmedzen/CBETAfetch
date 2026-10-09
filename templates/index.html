@@ -1,423 +1,1021 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBETA Sutra Downloader</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding-top: 20px;
-            background-color: #f8f9fa;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBETAfetch 2.0 · 漢語大乘佛典批次抓取與排版研讀工作台</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 Production -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Zen Theme Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              900: '#78350f',
+            }
+          }
         }
-
-        .container {
-            max-width: 800px;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        #log-area {
-            height: 300px;
-            overflow-y: scroll;
-            background: #212529;
-            color: #0f0;
-            padding: 10px;
-            font-family: monospace;
-            border-radius: 4px;
-            margin-top: 20px;
-        }
-
-        .nav-tabs {
-            margin-bottom: 20px;
-        }
-    </style>
+      }
+    }
+  </script>
+  <style>
+    [v-cloak] { display: none !important; }
+  </style>
 </head>
+<body class="min-h-screen flex flex-col antialiased">
+  <div id="app" v-cloak class="flex flex-col min-h-screen">
 
-<body>
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="text-center flex-grow-1" data-i18n="app_title">CBETA Sutra Downloader & Processor</h2>
-            <div class="ms-3">
-                <label for="language-selector" class="form-label mb-1"
-                    data-i18n="language_selector_label">Language</label>
-                <select id="language-selector" class="form-select form-select-sm">
-                    <option value="en">English</option>
-                    <option value="zh-TW">繁體中文</option>
-                </select>
+    <!-- Top Navigation Header -->
+    <header class="zen-header sticky top-0 z-50 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <!-- Brand Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+            <i class="bi bi-book-half text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-lg zen-text-main tracking-wide buddhist-font">CBETAfetch</span>
+              <span class="text-xs px-2 py-0.5 rounded-full zen-badge font-mono">v2.0</span>
             </div>
+            <p class="text-xs zen-text-muted">大乘佛典向導式研讀流水線 · 雙欄排版工作台</p>
+          </div>
         </div>
 
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="download-tab" data-bs-toggle="tab" data-bs-target="#download"
-                    type="button" role="tab" data-i18n="tab_download">Download</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="process-tab" data-bs-toggle="tab" data-bs-target="#process" type="button"
-                    role="tab" data-i18n="tab_process">Process</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="full-download-tab" data-bs-toggle="tab" data-bs-target="#full-download"
-                    type="button" role="tab" data-i18n="tab_full_download">Full Download</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button"
-                    role="tab" data-i18n="tab_settings">Settings</button>
-            </li>
-        </ul>
+        <!-- System Controls -->
+        <div class="flex items-center space-x-3">
+          <!-- Active Job Status Badge -->
+          <div v-if="systemStatus === 'busy'" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono">
+            <span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span>
+            <span>執行中 ({{ activeJob?.job_type }})</span>
+          </div>
+          <div v-else class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>系統就緒</span>
+          </div>
 
-        <div class="tab-content" id="myTabContent">
-            <!-- Download Tab -->
-            <div class="tab-pane fade show active" id="download" role="tabpanel">
-                <div class="mb-3">
-                    <label for="id-list" class="form-label" data-i18n="download_id_list_label">ID List (One per line,
-                        supports ranges e.g.
-                        T1500-T1505)</label>
-                    <textarea class="form-control" id="id-list" rows="10"
-                        data-i18n-placeholder="download_id_list_placeholder"
-                        placeholder="T1585&#10;T1586-T1590"></textarea>
-                </div>
+          <!-- Theme Toggler (3-Theme Switcher) -->
+          <div class="flex items-center zen-subcard p-0.5 text-xs">
+            <button @click="toggleTheme('dark')" :class="['px-2.5 py-1 rounded transition-colors', currentTheme === 'dark' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']" title="🌙 禪意深空 (Zen Dark)">
+              🌙
+            </button>
+            <button @click="toggleTheme('light')" :class="['px-2.5 py-1 rounded transition-colors', currentTheme === 'light' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']" title="☀️ 明朗素雅 (Scholastic Light)">
+              ☀️
+            </button>
+            <button @click="toggleTheme('gruvbox')" :class="['px-2.5 py-1 rounded transition-colors', currentTheme === 'gruvbox' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']" title="🍂 貝葉古風 (Sutra Gruvbox)">
+              🍂
+            </button>
+          </div>
 
-                <div class="mb-3">
-                    <label class="form-label" data-i18n="download_formats_label">Formats to Download</label>
-                    <div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="fmt-txt" value="txt" checked>
-                            <label class="form-check-label" for="fmt-txt">TXT</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="fmt-html" value="html">
-                            <label class="form-check-label" for="fmt-html">HTML</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="fmt-pdf" value="pdf">
-                            <label class="form-check-label" for="fmt-pdf">PDF</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="fmt-epub" value="epub">
-                            <label class="form-check-label" for="fmt-epub">EPUB</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="fmt-mobi" value="mobi">
-                            <label class="form-check-label" for="fmt-mobi">Mobi</label>
-                        </div>
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="startDownload()" data-i18n="download_button">Start
-                    Download</button>
+          <!-- Language Selector -->
+          <select v-model="currentLang" @change="loadLanguage(currentLang)" class="zen-input px-2.5 py-1 text-xs zen-text-main focus:outline-none">
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 4-Step Guided Pipeline Stepper Bar -->
+      <div class="zen-stepper-bar px-4 py-2">
+        <div class="max-w-7xl mx-auto flex items-center justify-between overflow-x-auto text-xs sm:text-sm">
+          <div class="flex items-center space-x-2 sm:space-x-6 w-full justify-between">
+
+            <!-- Step 1: Corpus Selection -->
+            <button @click="currentTab = 'step1_corpus'"
+                    :class="currentTab === 'step1_corpus' ? 'zen-text-gold font-bold border-amber-500' : 'zen-text-muted hover:zen-text-main border-transparent'"
+                    class="flex items-center gap-1.5 pb-1 border-b-2 transition-all whitespace-nowrap">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                    :class="currentTab === 'step1_corpus' ? 'bg-amber-500 text-slate-950 font-bold' : 'zen-subcard zen-text-main'">1</span>
+              <span>典籍挑選</span>
+            </button>
+
+            <span class="zen-text-muted opacity-40">➔</span>
+
+            <!-- Step 2: Download -->
+            <button @click="currentTab = 'step2_download'"
+                    :class="currentTab === 'step2_download' ? 'zen-text-gold font-bold border-amber-500' : 'zen-text-muted hover:zen-text-main border-transparent'"
+                    class="flex items-center gap-1.5 pb-1 border-b-2 transition-all whitespace-nowrap">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                    :class="currentTab === 'step2_download' ? 'bg-amber-500 text-slate-950 font-bold' : 'zen-subcard zen-text-main'">2</span>
+              <span>批次下載</span>
+            </button>
+
+            <span class="zen-text-muted opacity-40">➔</span>
+
+            <!-- Step 3: Combine -->
+            <button @click="currentTab = 'step3_combine'"
+                    :class="currentTab === 'step3_combine' ? 'zen-text-gold font-bold border-amber-500' : 'zen-text-muted hover:zen-text-main border-transparent'"
+                    class="flex items-center gap-1.5 pb-1 border-b-2 transition-all whitespace-nowrap">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                    :class="currentTab === 'step3_combine' ? 'bg-amber-500 text-slate-950 font-bold' : 'zen-subcard zen-text-main'">3</span>
+              <span>卷次合併</span>
+            </button>
+
+            <span class="zen-text-muted opacity-40">➔</span>
+
+            <!-- Step 4: Workbench & Reading -->
+            <button @click="currentTab = 'step4_workbench'"
+                    :class="currentTab === 'step4_workbench' ? 'zen-text-gold font-bold border-amber-500' : 'zen-text-muted hover:zen-text-main border-transparent'"
+                    class="flex items-center gap-1.5 pb-1 border-b-2 transition-all whitespace-nowrap">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                    :class="currentTab === 'step4_workbench' ? 'bg-amber-500 text-slate-950 font-bold' : 'zen-subcard zen-text-main'">4</span>
+              <span>排版研讀工作台</span>
+              <span v-if="completeFiles.length > 0" class="text-xs px-1.5 py-0.2 rounded-full zen-badge font-mono">
+                {{ completeFiles.length }} 部
+              </span>
+            </button>
+
+            <span class="zen-text-muted opacity-30 hidden sm:inline">|</span>
+
+            <!-- Auxiliary: Full Pack, Settings, Diagnostics -->
+            <div class="hidden sm:flex items-center space-x-3 text-xs">
+              <button @click="currentTab = 'full_canon'" :class="currentTab === 'full_canon' ? 'zen-text-gold font-semibold' : 'zen-text-muted hover:zen-text-main'">
+                全藏下載
+              </button>
+              <button @click="currentTab = 'settings'" :class="currentTab === 'settings' ? 'zen-text-gold font-semibold' : 'zen-text-muted hover:zen-text-main'">
+                路徑設定
+              </button>
+              <button @click="currentTab = 'diagnostics'" :class="currentTab === 'diagnostics' ? 'zen-text-gold font-semibold' : 'zen-text-muted hover:zen-text-main'">
+                系統自檢
+              </button>
             </div>
 
-            <!-- Process Tab -->
-            <div class="tab-pane fade" id="process" role="tabpanel">
-                <div class="mb-3">
-                    <label for="project-dir" class="form-label" data-i18n="process_project_dir_label">Project Directory
-                        (containing zips)</label>
-                    <input type="text" class="form-control" id="project-dir"
-                        data-i18n-placeholder="process_project_dir_placeholder" placeholder="e.g., ./downloads/"
-                        value="./downloads/">
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="remove-zip" checked>
-                    <label class="form-check-label" for="remove-zip" data-i18n="process_remove_zip_label">
-                        Remove Zip files after extraction
-                    </label>
-                </div>
-                <button class="btn btn-success" onclick="startProcess()" data-i18n="process_combine_button">Combine txt
-                    files</button>
-                <button class="btn btn-warning ms-2" onclick="startConvertMD()"
-                    data-i18n="process_convert_button">Convert to MD</button>
-            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-            <!-- Full Download Tab -->
-            <div class="tab-pane fade" id="full-download" role="tabpanel">
-                <div class="mb-3">
-                    <label for="complete-pack-url" class="form-label"
-                        data-i18n="settings_complete_pack_url_label">Complete Text Pack URL</label>
-                    <input type="text" class="form-control" id="complete-pack-url"
-                        data-i18n-placeholder="settings_complete_pack_url_placeholder"
-                        placeholder="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip"
-                        value="https://cbdata.dila.edu.tw/stable/download/cbeta-text.zip">
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="convert-md" checked>
-                    <label class="form-check-label" for="convert-md" data-i18n="full_download_convert_md_label">
-                        Convert to MD
-                    </label>
-                </div>
-                <button class="btn btn-info" onclick="startCompleteTextPack()"
-                    data-i18n="download_complete_text_pack_button">Complete Text Pack Process</button>
-            </div>
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-            <!-- Settings Tab -->
-            <div class="tab-pane fade" id="settings" role="tabpanel">
-                <div class="mb-3">
-                    <label for="dest-dir" class="form-label" data-i18n="settings_dest_dir_label">Download
-                        Destination</label>
-                    <input type="text" class="form-control" id="dest-dir"
-                        data-i18n-placeholder="settings_dest_dir_placeholder" placeholder="e.g., ./downloads/"
-                        value="./downloads/">
-                </div>
-
-                <div class="mb-3">
-                    <label for="example-url" class="form-label" data-i18n="settings_txt_url_label">TXT URL
-                        (Optional)</label>
-                    <input type="text" class="form-control" id="example-url"
-                        data-i18n-placeholder="settings_txt_url_placeholder"
-                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/text/T2107.txt.zip">
-                    <div class="form-text" data-i18n="settings_txt_url_help">If provided, the app will use the base path
-                        from this URL for all files in
-                        the list.</div>
-                </div>
-                <div class="mb-3">
-                    <label for="html-url" class="form-label" data-i18n="settings_html_url_label">HTML URL
-                        (Optional)</label>
-                    <input type="text" class="form-control" id="html-url"
-                        data-i18n-placeholder="settings_html_url_placeholder"
-                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/html/T2107.html.zip">
-                </div>
-                <div class="mb-3">
-                    <label for="pdf-url" class="form-label" data-i18n="settings_pdf_url_label">PDF URL
-                        (Optional)</label>
-                    <input type="text" class="form-control" id="pdf-url"
-                        data-i18n-placeholder="settings_pdf_url_placeholder"
-                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/pdf/T/T2107.pdf">
-                </div>
-                <div class="mb-3">
-                    <label for="epub-url" class="form-label" data-i18n="settings_epub_url_label">EPUB URL
-                        (Optional)</label>
-                    <input type="text" class="form-control" id="epub-url"
-                        data-i18n-placeholder="settings_epub_url_placeholder"
-                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/epub/T/T2107.epub">
-                </div>
-                <div class="mb-3">
-                    <label for="mobi-url" class="form-label" data-i18n="settings_mobi_url_label">MOBI URL
-                        (Optional)</label>
-                    <input type="text" class="form-control" id="mobi-url"
-                        data-i18n-placeholder="settings_mobi_url_placeholder"
-                        placeholder="e.g. https://cbdata.dila.edu.tw/stable/download/mobi/T/T2107.mobi">
-                </div>
+      <!-- ======================================================== -->
+      <!-- Step 1: 典籍挑選與藏號配置 (Corpus & Canon Selection) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'step1_corpus'" class="space-y-6">
+        
+        <!-- Curated Buddhist Canon Presets -->
+        <div class="zen-card p-5">
+          <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+            <div>
+              <h3 class="text-sm font-bold zen-text-main flex items-center space-x-2">
+                <i class="bi bi-collection-play-fill text-amber-500"></i>
+                <span>傳世大乘經論預設庫 (點擊一鍵匯入流水線)</span>
+              </h3>
+              <span class="text-xs zen-text-muted">已收錄 {{ presets.length }} 組經論 · 支援自訂新增、編輯與刪除常用經論集</span>
             </div>
+            <div class="flex items-center space-x-2">
+              <button @click="openCreatePresetModal"
+                      class="zen-btn-primary px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1 cursor-pointer"
+                      title="新增常用經論組合">
+                <i class="bi bi-plus-lg"></i>
+                <span>新增常用預設</span>
+              </button>
+              <button @click="resetPresets"
+                      class="zen-btn-secondary px-2.5 py-1.5 rounded-lg text-xs flex items-center space-x-1 cursor-pointer"
+                      title="重置回 CBETA 官方 6 大內建預設">
+                <i class="bi bi-arrow-counterclockwise"></i>
+                <span class="hidden sm:inline">重置內建</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <div v-for="p in presets" :key="p.id"
+                 @click="applyPreset(p)"
+                 :class="['p-3.5 rounded-xl border cursor-pointer transition-all zen-subcard relative group', selectedPresetId === p.id ? 'selected' : '']">
+              <div class="flex items-start justify-between mb-1.5 pr-14">
+                <span class="font-bold text-sm zen-text-main buddhist-font">{{ p.title }}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full zen-badge font-mono">{{ p.badge }}</span>
+              </div>
+              <p class="text-xs zen-text-muted line-clamp-2 mb-2">{{ p.description }}</p>
+              <div class="flex flex-wrap gap-1">
+                <span v-for="s in p.sutras" :key="s.id" class="text-[10px] px-1.5 py-0.5 rounded zen-badge code-font">
+                  {{ s.id }} {{ s.name }}
+                </span>
+              </div>
+
+              <!-- Edit & Delete Action Hover Buttons -->
+              <div class="absolute top-2.5 right-2.5 flex items-center space-x-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button @click="openEditPresetModal(p, $event)"
+                        class="w-6 h-6 rounded flex items-center justify-center zen-subcard hover:border-amber-500 text-amber-400 text-xs transition-colors"
+                        title="編輯此預設">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button @click="deletePreset(p, $event)"
+                        class="w-6 h-6 rounded flex items-center justify-center zen-subcard hover:border-rose-500 text-rose-400 text-xs transition-colors"
+                        title="刪除此預設">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div id="log-area" data-i18n="log_area_default">Logs will appear here...</div>
+        <!-- Custom Sutra IDs & Formats -->
+        <div class="zen-card p-6 space-y-5">
+          <div>
+            <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
+              <div class="flex items-center space-x-2">
+                <label class="block text-sm font-semibold zen-text-main">經文編號列表 (每行一個)</label>
+                <button v-if="pipelineForm.idList.trim()" @click="clearIdList"
+                        class="text-xs px-2.5 py-0.5 rounded zen-btn-secondary flex items-center space-x-1 hover:text-rose-400 transition-colors cursor-pointer"
+                        title="清空經文編號列表內容">
+                  <i class="bi bi-trash3"></i>
+                  <span>清空內容</span>
+                </button>
+              </div>
+              <div class="flex items-center space-x-3 text-xs zen-text-muted font-mono">
+                <span v-if="pipelineForm.idList.trim()" class="zen-text-gold font-semibold">已填寫 {{ pipelineForm.idList.split('\n').filter(Boolean).length }} 部</span>
+                <span>支援範圍: 如 T1500-T1505 | 雙字藏號: 如 JB234, ZS0010</span>
+              </div>
+            </div>
+            <textarea v-model="pipelineForm.idList" rows="6" class="w-full zen-textarea p-3 text-sm code-font zen-text-gold placeholder-slate-500 transition-colors" placeholder="T1585&#10;T1500-T1505&#10;JB234&#10;X0367"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold zen-text-main mb-2">下載格式矩陣</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="txt" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">TXT (文字檔)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="text-with-notes" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">TXT+校注 (含註)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="html" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">HTML (網頁)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="docx" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">DOCX (Word)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="odt" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">ODT (文件)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="pdf" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">PDF (文件)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="epub" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">EPUB (電子書)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="mobi" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">MOBI (Kindle)</span>
+              </label>
+              <label class="flex items-center space-x-2 p-2.5 rounded-lg zen-subcard cursor-pointer">
+                <input type="checkbox" value="docusky" v-model="pipelineForm.formats" class="rounded text-amber-600 focus:ring-amber-500">
+                <span class="text-xs sm:text-sm font-medium zen-text-main">DocuSky (XML)</span>
+              </label>
+            </div>
+
+            <!-- Adaptive Pipeline Flow Mode Indicator Card -->
+            <div class="mt-3.5 p-3 rounded-xl border text-xs flex items-center justify-between"
+                 :class="{
+                   'bg-amber-500/10 border-amber-500/30 text-amber-300': pipelineStreamMode === 'text_stream',
+                   'bg-blue-500/10 border-blue-500/30 text-blue-300': pipelineStreamMode === 'ebook_stream',
+                   'bg-emerald-500/10 border-emerald-500/30 text-emerald-300': pipelineStreamMode === 'dual_stream'
+                 }">
+              <div class="flex items-center space-x-2.5">
+                <span class="text-lg">
+                  <i v-if="pipelineStreamMode === 'text_stream'" class="bi bi-file-earmark-text-fill text-amber-400"></i>
+                  <i v-else-if="pipelineStreamMode === 'ebook_stream'" class="bi bi-book-fill text-blue-400"></i>
+                  <i v-else class="bi bi-diagram-3-fill text-emerald-400"></i>
+                </span>
+                <div>
+                  <span class="font-bold">
+                    {{
+                      pipelineStreamMode === 'text_stream' ? '文字排版研讀管線 (Text & Markdown Stream)' :
+                      pipelineStreamMode === 'ebook_stream' ? '電子書與排版文件流 (E-Book & Document Stream)' :
+                      '雙軌智能研讀管線 (Dual-Track Adaptive Stream)'
+                    }}
+                  </span>
+                  <p class="text-[11px] opacity-80 mt-0.5">
+                    {{
+                      pipelineStreamMode === 'text_stream' ? '完整管線：多卷解壓 ➔ 自然升冪排序 ➔ 跨卷註解清洗 ➔ H2 卷品地排版 ➔ 雙欄研讀台' :
+                      pipelineStreamMode === 'ebook_stream' ? '已自動切換：直接下載多格式電子書與排版文件 ➔ 自動校驗與歸檔至文檔庫（自動跳過純文字合併步驟）' :
+                      '綜合多軌：純文字自動合併排版為 Markdown ＋ 電子書排版文件自動分類歸檔'
+                    }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Master Action Bar -->
+          <div class="pt-4 border-t zen-border flex flex-wrap items-center justify-between gap-3">
+            <button @click="runFullPipeline" :disabled="isSubmitting"
+                    class="zen-btn-primary px-6 py-3 rounded-xl font-bold text-sm sm:text-base flex items-center space-x-2.5 disabled:opacity-50">
+              <i class="bi bi-lightning-charge-fill text-lg"></i>
+              <span>一鍵執行完整流水線 (下載 ➔ 解壓 ➔ 合併 ➔ H2排版 ➔ 研讀台)</span>
+            </button>
+
+            <button @click="currentTab = 'step2_download'"
+                    class="zen-btn-secondary px-4 py-2.5 rounded-lg text-sm flex items-center space-x-1.5">
+              <span>逐步執行：前往步驟二 下載</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Step 2: 批次下載與資源同步 (Batch Download & Network Sync) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'step2_download'" class="zen-card p-6 space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold zen-text-main">步驟二：批次下載資源</h3>
+            <p class="text-xs zen-text-muted">自 CBETA / DILA 或自訂節點下載經文壓縮檔</p>
+          </div>
+          <button @click="currentTab = 'step3_combine'" class="text-xs zen-text-gold hover:underline flex items-center gap-1">
+            <span>跳至步驟三：卷次合併</span>
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">下載儲存暫存路徑</label>
+            <input type="text" v-model="pipelineForm.destDir" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">自訂 TXT 伺服器節點 (選填)</label>
+            <input type="text" v-model="pipelineForm.exampleUrl" placeholder="預設使用 cbdata.dila.edu.tw" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl zen-subcard flex items-center justify-between">
+          <div>
+            <span class="text-sm font-medium zen-text-main">目標經號數：</span>
+            <span class="zen-text-gold font-mono font-bold">{{ pipelineForm.idList.split('\n').filter(Boolean).length }} 筆</span>
+            <span class="text-xs zen-text-muted ml-3">已選格式：{{ pipelineForm.formats.join(', ') }}</span>
+          </div>
+          <button @click="startDownloadOnly" :disabled="isSubmitting"
+                  class="zen-btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center space-x-2">
+            <i class="bi bi-cloud-arrow-down-fill"></i>
+            <span>執行批次下載</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Step 3: 卷次解壓與智能重排 (Extract & Combine) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'step3_combine'" class="zen-card p-6 space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-bold zen-text-main">步驟三：解壓卷次與智能合併</h3>
+            <p class="text-xs zen-text-muted">執行卷次自然排序、TOC 目錄置尾、跨卷註解清洗與全篇合成</p>
+          </div>
+          <button @click="currentTab = 'step4_workbench'" class="text-xs zen-text-gold hover:underline flex items-center gap-1">
+            <span>前往步驟四：研讀工作台</span>
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">來源專案目錄 (含 Zip 檔案)</label>
+            <input type="text" v-model="pipelineForm.destDir" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">合併產出目錄</label>
+            <input type="text" v-model="pipelineForm.outputDir" placeholder="./complete" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="step3-rm-zip" v-model="pipelineForm.removeZip" class="rounded text-amber-600 focus:ring-amber-500">
+          <label for="step3-rm-zip" class="text-xs zen-text-main cursor-pointer">解壓縮成功後刪除來源 Zip 檔</label>
+        </div>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button @click="startProcessOnly" :disabled="isSubmitting"
+                  class="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm flex items-center space-x-2 shadow">
+            <i class="bi bi-stack"></i>
+            <span>解壓並合併卷次</span>
+          </button>
+          <button @click="startConvertOnly" :disabled="isSubmitting"
+                  class="zen-btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center space-x-2 shadow">
+            <i class="bi bi-markdown"></i>
+            <span>轉換為 Markdown 並排版 H2</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Step 4: 雙欄經文研讀工作台 (Reading & Typography Workbench) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'step4_workbench'" class="space-y-4">
+        
+        <!-- Workbench Controls & Statistics -->
+        <div class="zen-card p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg zen-badge flex items-center justify-center font-bold">
+              ☸
+            </div>
+            <div>
+              <h3 class="text-sm font-bold zen-text-main">數位人文研讀對讀工作台</h3>
+              <p class="text-[11px] zen-text-muted">已產出 {{ completeFiles.length }} 部典籍 · 支援全篇排版閱讀、複製全文與下載 .md</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button @click="loadCompleteFiles" class="zen-btn-secondary px-2.5 py-1.5 rounded-lg text-xs flex items-center gap-1">
+              <i class="bi bi-arrow-clockwise"></i>
+              <span>重新載入清單</span>
+            </button>
+            <div class="flex items-center zen-subcard p-0.5 text-xs">
+              <button @click="readerViewMode = 'rendered'" :class="['px-2.5 py-1 rounded transition-colors', readerViewMode === 'rendered' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted']">
+                排版視圖
+              </button>
+              <button @click="readerViewMode = 'raw'" :class="['px-2.5 py-1 rounded transition-colors', readerViewMode === 'raw' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted']">
+                原始 Markdown
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dual Column Reader Workbench -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+          <!-- Left Column (4/12): Scripture List Management -->
+          <div class="lg:col-span-4 zen-card p-4 space-y-3 flex flex-col h-[650px]">
+            <div class="relative">
+              <i class="bi bi-search absolute left-3 top-2.5 zen-text-muted text-xs"></i>
+              <input type="text" v-model="fileSearchQuery" placeholder="檢索典籍題名或經號..." class="w-full zen-input pl-8 pr-3 py-1.5 text-xs">
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="flex items-center space-x-1 zen-subcard p-0.5 rounded text-[11px] overflow-x-auto">
+              <button @click="fileCategoryFilter = 'all'" :class="['px-2 py-0.5 rounded transition-colors whitespace-nowrap', fileCategoryFilter === 'all' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">全部</button>
+              <button @click="fileCategoryFilter = 'sutra_md'" :class="['px-2 py-0.5 rounded transition-colors whitespace-nowrap', fileCategoryFilter === 'sutra_md' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">Markdown</button>
+              <button @click="fileCategoryFilter = 'ebook'" :class="['px-2 py-0.5 rounded transition-colors whitespace-nowrap', fileCategoryFilter === 'ebook' ? 'bg-blue-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">電子書</button>
+              <button @click="fileCategoryFilter = 'document'" :class="['px-2 py-0.5 rounded transition-colors whitespace-nowrap', fileCategoryFilter === 'document' ? 'bg-emerald-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">Word/ODT</button>
+              <button @click="fileCategoryFilter = 'data'" :class="['px-2 py-0.5 rounded transition-colors whitespace-nowrap', fileCategoryFilter === 'data' ? 'bg-purple-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">數據</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-1.5 pr-1">
+              <div v-if="filteredCompleteFiles.length === 0" class="text-center py-10 zen-text-muted text-xs">
+                暫無此分類典籍檔案。
+              </div>
+              <div v-for="f in filteredCompleteFiles" :key="f.filename"
+                   @click="openFilePreview(f.filename)"
+                   :class="['p-3 rounded-lg border cursor-pointer transition-all zen-subcard', selectedFileName === f.filename ? 'selected' : '']">
+                <div class="flex items-start justify-between">
+                  <span class="font-bold text-xs zen-text-main line-clamp-1 buddhist-font">{{ f.filename }}</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded zen-badge font-mono">{{ f.size_kb }} KB</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] zen-text-muted mt-1.5">
+                  <span class="code-font">{{ f.label || f.type.toUpperCase() }}</span>
+                  <span>{{ new Date(f.modified * 1000).toLocaleDateString() }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column (8/12): Sutra Typography Reader -->
+          <div class="lg:col-span-8 zen-card p-5 flex flex-col h-[650px] overflow-hidden">
+            <!-- Reader Header -->
+            <div v-if="fileContentData" class="flex items-center justify-between border-b pb-3 mb-3" style="border-color: var(--border-app);">
+              <div>
+                <h2 class="text-base font-bold zen-text-gold buddhist-font tracking-wide">
+                  {{ fileContentData.filename }}
+                </h2>
+                <div class="flex items-center space-x-3 text-[11px] zen-text-muted mt-1 font-mono">
+                  <span v-if="!fileContentData.is_binary">總行數: {{ fileContentData.line_count }}</span>
+                  <span v-if="!fileContentData.is_binary">字元數: {{ fileContentData.char_count }}</span>
+                  <span v-if="fileContentData.is_binary">檔案大小: {{ fileContentData.size_kb }} KB</span>
+                  <span v-if="fileContentData.is_binary">格式類型: {{ fileContentData.type.toUpperCase() }}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <button v-if="!fileContentData.is_binary" @click="copyCurrentFileContent" class="zen-btn-secondary px-2.5 py-1 rounded text-xs flex items-center gap-1" title="複製全文">
+                  <i class="bi bi-clipboard"></i>
+                  <span>複製全文</span>
+                </button>
+                <button @click="downloadCurrentFile" class="zen-btn-primary px-2.5 py-1 rounded text-xs flex items-center gap-1" title="下載檔案">
+                  <i class="bi bi-download"></i>
+                  <span>下載檔案</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Reader Body -->
+            <div class="flex-1 overflow-y-auto pr-2">
+              <div v-if="isLoadingFile" class="flex items-center justify-center h-full zen-text-muted text-sm">
+                <div class="animate-spin mr-2">☸</div> 載入文檔中...
+              </div>
+              <div v-else-if="!fileContentData" class="flex flex-col items-center justify-center h-full zen-text-muted text-sm">
+                <i class="bi bi-book text-3xl mb-2 opacity-50"></i>
+                <span>請在左側點選典籍以開啟研讀閱讀器</span>
+              </div>
+              <!-- Binary Document / E-Book Presentation Card -->
+              <div v-else-if="fileContentData.is_binary" class="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+                <div class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-xl border"
+                     style="background-color: var(--bg-subcard); border-color: var(--border-app);">
+                  <i v-if="fileContentData.type === 'pdf'" class="bi bi-file-earmark-pdf-fill text-rose-500"></i>
+                  <i v-else-if="fileContentData.type === 'epub'" class="bi bi-book-half text-amber-500"></i>
+                  <i v-else-if="fileContentData.type === 'mobi'" class="bi bi-phone-fill text-blue-500"></i>
+                  <i v-else-if="fileContentData.type === 'docx'" class="bi bi-file-earmark-word-fill text-blue-600"></i>
+                  <i v-else-if="fileContentData.type === 'odt'" class="bi bi-file-earmark-richtext-fill text-emerald-500"></i>
+                  <i v-else class="bi bi-file-earmark-binary text-slate-400"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold zen-text-main buddhist-font">{{ fileContentData.filename }}</h3>
+                  <p class="text-xs zen-text-muted mt-1 font-mono">
+                    格式: {{ fileContentData.type.toUpperCase() }} · 檔案大小: {{ fileContentData.size_kb }} KB
+                  </p>
+                </div>
+                <div class="p-4 rounded-xl zen-subcard max-w-md text-xs zen-text-muted text-left space-y-1.5 border" style="border-color: var(--border-app);">
+                  <div class="font-semibold zen-text-main flex items-center gap-1.5">
+                    <i class="bi bi-info-circle-fill zen-text-gold"></i>
+                    <span>排版文檔與電子書說明</span>
+                  </div>
+                  <p v-if="fileContentData.type === 'pdf'">可直接下載後使用 Adobe Acrobat、系統預覽程式或列印研讀。</p>
+                  <p v-else-if="fileContentData.type === 'epub'">可匯入 Apple Books、Kobo 或各類 EPUB 電子書閱讀器精讀。</p>
+                  <p v-else-if="fileContentData.type === 'mobi'">專為 Kindle 閱讀器設計，可透過 Send to Kindle 傳送至設備。</p>
+                  <p v-else-if="fileContentData.type === 'docx' || fileContentData.type === 'odt'">標準 Word / LibreOffice 排版格式，便於佛學論文撰寫與科判引用。</p>
+                </div>
+                <button @click="downloadCurrentFile" class="zen-btn-primary px-6 py-2.5 rounded-xl text-sm flex items-center space-x-2 shadow cursor-pointer">
+                  <i class="bi bi-download"></i>
+                  <span>立即下載此檔案 ({{ fileContentData.size_kb }} KB)</span>
+                </button>
+              </div>
+              <!-- Rendered Typography View -->
+              <div v-else-if="readerViewMode === 'rendered'" v-html="renderedFileHtml" class="p-2 space-y-1"></div>
+              <!-- Raw Markdown View -->
+              <pre v-else class="text-xs code-font zen-text-main whitespace-pre-wrap p-3 zen-subcard rounded-lg">{{ fileContentData.content }}</pre>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Tab: 全藏批次下載 (Full Canon: TXT & XML Editions) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'full_canon'" class="zen-card p-6 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold zen-text-main mb-1">全藏批次下載與代碼庫同步</h3>
+            <p class="text-xs zen-text-muted">支援純文字全藏壓縮包 (ZIP) 與 CBETA 官方 TEI P5 XML Git 全藏庫雙模式 · 即時監測遠端最新更新時間</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <!-- Check Remote Updates Button -->
+            <button @click="checkRemoteUpdates" :disabled="isCheckingUpdates"
+                    class="zen-btn-secondary px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 cursor-pointer"
+                    title="重新檢查官方伺服器與 GitHub 遠端最後更新時間">
+              <i class="bi bi-cloud-arrow-down" :class="{'animate-spin': isCheckingUpdates}"></i>
+              <span>{{ isCheckingUpdates ? '查詢中...' : '檢查遠端更新時間' }}</span>
+            </button>
+
+            <!-- Edition Switcher Toggle -->
+            <div class="flex items-center zen-subcard p-1 text-xs">
+              <button @click="fullPackForm.edition = 'txt'"
+                      :class="['px-3 py-1.5 rounded-md transition-all flex items-center space-x-1.5 font-medium', fullPackForm.edition === 'txt' ? 'bg-amber-600 text-white shadow-sm' : 'zen-text-muted hover:zen-text-main']">
+                <i class="bi bi-file-earmark-zip-fill"></i>
+                <span>純文字壓縮包 (TXT ZIP)</span>
+              </button>
+              <button @click="fullPackForm.edition = 'xml'; checkXmlRepoStatus()"
+                      :class="['px-3 py-1.5 rounded-md transition-all flex items-center space-x-1.5 font-medium', fullPackForm.edition === 'xml' ? 'bg-amber-600 text-white shadow-sm' : 'zen-text-muted hover:zen-text-main']">
+                <i class="bi bi-git"></i>
+                <span>TEI P5 XML (Git Repo)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Visual Progress Bar for Full Canon Download -->
+        <div v-if="activeJob && (activeJob.job_type === 'complete_pack' || activeJob.job_type === 'xml_sync' || activeJob.job_type === 'xml_to_obsidian')"
+             class="p-4 rounded-xl zen-card border space-y-2.5 shadow-lg animate-pulse" style="border-color: var(--accent-gold);">
+          <div class="flex items-center justify-between text-xs font-semibold">
+            <span class="zen-text-gold flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+              <span>
+                {{
+                  activeJob.job_type === 'complete_pack' ? '正在執行純文字全藏下載與批次處理...' :
+                  activeJob.job_type === 'xml_sync' ? '正在同步 CBETA TEI P5 XML Git 全藏庫...' :
+                  '正在批次轉換 XML 為 Obsidian Markdown...'
+                }}
+              </span>
+            </span>
+            <span class="zen-text-gold font-mono text-sm font-bold">{{ activeJob.progress_percent }}%</span>
+          </div>
+          <!-- Progress Bar Track -->
+          <div class="w-full rounded-full h-3.5 overflow-hidden p-0.5 border" style="background-color: var(--bg-input); border-color: var(--border-app);">
+            <div class="h-full rounded-full transition-all duration-300 ease-out"
+                 style="background: linear-gradient(90deg, #f59e0b 0%, #10b981 100%);"
+                 :style="{ width: Math.max(2, activeJob.progress_percent) + '%' }"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] zen-text-muted font-mono">
+            <span>{{ activeJob.progress_message || '資料傳輸中...' }}</span>
+            <button @click="cancelActiveJob" class="text-rose-400 hover:underline flex items-center gap-1 cursor-pointer">
+              <i class="bi bi-stop-circle"></i>
+              <span>中斷任務</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode A: TXT Pack -->
+        <div v-if="fullPackForm.edition === 'txt'" class="space-y-4 p-4 rounded-xl zen-subcard">
+          <div class="flex items-center space-x-2 text-xs zen-text-gold font-semibold mb-1">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>純文字全藏壓縮包模式：下載數百 MB 之 cbeta-text.zip，解壓萬卷並全面轉化為 Markdown</span>
+          </div>
+
+          <!-- Remote Last-Modified Status Card for ZIP Pack -->
+          <div class="p-3.5 rounded-lg zen-card text-xs space-y-1.5 border" style="border-color: var(--border-app);">
+            <div class="flex items-center justify-between">
+              <span class="font-bold zen-text-main flex items-center gap-1.5">
+                <i class="bi bi-clock-history zen-text-gold"></i>
+                <span>官方壓縮包遠端更新狀態</span>
+              </span>
+              <span v-if="remoteUpdates?.zip_pack?.success" class="text-emerald-500 font-mono text-[11px] flex items-center gap-1">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>已取得伺服器標頭</span>
+              </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 zen-text-muted pt-1 text-[11px] font-mono">
+              <div>最後更新時間: <span class="zen-text-gold font-bold">{{ remoteUpdates?.zip_pack?.last_modified || '查詢中...' }}</span></div>
+              <div>檔案總大小: <span class="zen-text-main font-bold">{{ remoteUpdates?.zip_pack?.size_mb ? remoteUpdates.zip_pack.size_mb + ' MB' : '約 336 MB' }}</span></div>
+              <div class="truncate" :title="remoteUpdates?.zip_pack?.etag">ETag: <span class="zen-text-main">{{ remoteUpdates?.zip_pack?.etag || '無' }}</span></div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">全藏壓縮包下載網址 (ZIP)</label>
+            <input type="text" v-model="fullPackForm.packUrl" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">下載與解壓暫存目錄</label>
+              <input type="text" v-model="fullPackForm.destDir" class="w-full zen-input p-2.5 text-xs code-font">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">Markdown 產出目錄</label>
+              <input type="text" v-model="fullPackForm.outputDir" class="w-full zen-input p-2.5 text-xs code-font">
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="fp-convert-md" v-model="fullPackForm.convertMd" class="rounded text-amber-600 focus:ring-amber-500">
+            <label for="fp-convert-md" class="text-xs zen-text-main cursor-pointer">全自動將合併卷次轉換為 Markdown (.md) 並套用 H2 標題排版</label>
+          </div>
+
+          <div class="pt-2">
+            <button @click="startFullPack" :disabled="isSubmitting"
+                    class="zen-btn-primary px-6 py-2.5 rounded-lg text-sm flex items-center space-x-2 shadow cursor-pointer">
+              <i class="bi bi-file-earmark-zip-fill"></i>
+              <span>執行純文字全藏下載 (ZIP)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode B: TEI P5 XML Git Repo -->
+        <div v-else class="space-y-4 p-4 rounded-xl zen-subcard">
+          <div class="flex items-center space-x-2 text-xs text-emerald-400 font-semibold mb-1">
+            <i class="bi bi-git"></i>
+            <span>CBETA TEI P5 XML 模式：透過 Git Clone / Pull 完整取得官方 XML 經文原始標註</span>
+          </div>
+
+          <!-- Remote Last-Modified Status Card for Git Repo -->
+          <div class="p-3.5 rounded-lg zen-card text-xs space-y-1.5 border" style="border-color: var(--border-app);">
+            <div class="flex items-center justify-between">
+              <span class="font-bold zen-text-main flex items-center gap-1.5">
+                <i class="bi bi-clock-history text-emerald-400"></i>
+                <span>GitHub 官方倉庫最新提交狀態</span>
+              </span>
+              <span v-if="remoteUpdates?.git_repo?.success" class="text-emerald-500 font-mono text-[11px] flex items-center gap-1">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>{{ remoteUpdates?.git_repo?.source === 'github_api' ? 'GitHub API 已連通' : '本地 Git 已連通' }}</span>
+              </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 zen-text-muted pt-1 text-[11px] font-mono">
+              <div>最新提交時間: <span class="text-emerald-400 font-bold">{{ remoteUpdates?.git_repo?.last_modified || '查詢中...' }}</span></div>
+              <div>最新 Commit: <span class="zen-text-main font-bold">{{ remoteUpdates?.git_repo?.commit_hash || '查詢中...' }}</span></div>
+              <div class="truncate" :title="remoteUpdates?.git_repo?.commit_message">訊息: <span class="zen-text-gold">{{ remoteUpdates?.git_repo?.commit_message || '無' }}</span></div>
+              <div>提交者: <span class="zen-text-main">{{ remoteUpdates?.git_repo?.author || 'heavenchou' }}</span></div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">CBETA 官方 XML Git 倉庫網址</label>
+            <input type="text" v-model="fullPackForm.xmlRepoUrl" class="w-full zen-input p-2.5 text-xs code-font zen-text-gold">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">本地克隆/同步目標目錄</label>
+            <input type="text" v-model="fullPackForm.xmlDestDir" placeholder="./downloads-xml" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="xml-shallow" v-model="fullPackForm.shallow" class="rounded text-amber-600 focus:ring-amber-500">
+            <label for="xml-shallow" class="text-xs zen-text-main cursor-pointer">啟用淺層 Clone (--depth 1，推薦：大幅縮減傳輸時間與磁碟容量)</label>
+          </div>
+
+          <!-- Local XML Repo Status Inspection Card -->
+          <div v-if="xmlRepoStatus" class="p-3.5 rounded-lg zen-subcard text-xs space-y-1.5 border" style="border-color: var(--border-app);">
+            <div class="flex items-center justify-between">
+              <span class="font-bold zen-text-main flex items-center gap-1.5">
+                <i class="bi bi-folder-check text-emerald-400"></i>
+                <span>本地倉庫狀態: {{ xmlRepoStatus.is_git ? '已就緒 (Git 倉庫)' : (xmlRepoStatus.exists ? '目錄已存在 (非 Git)' : '尚未克隆') }}</span>
+              </span>
+              <button @click="checkXmlRepoStatus" :disabled="isCheckingXmlStatus" class="zen-text-gold hover:underline flex items-center gap-1 text-[11px] cursor-pointer">
+                <i class="bi bi-arrow-repeat" :class="{'animate-spin': isCheckingXmlStatus}"></i>
+                <span>刷新狀態</span>
+              </button>
+            </div>
+            <div v-if="xmlRepoStatus.is_git" class="grid grid-cols-2 sm:grid-cols-4 gap-2 zen-text-muted pt-1 text-[11px] font-mono">
+              <div>分支: <span class="zen-text-main">{{ xmlRepoStatus.branch }}</span></div>
+              <div>Commit: <span class="zen-text-main">{{ xmlRepoStatus.commit }}</span></div>
+              <div>XML 檔案數: <span class="zen-text-gold font-bold">{{ xmlRepoStatus.xml_file_count }}</span></div>
+              <div class="truncate" :title="xmlRepoStatus.remote_url">來源: <span class="zen-text-main">{{ xmlRepoStatus.remote_url }}</span></div>
+            </div>
+          </div>
+
+          <div class="pt-2 flex flex-wrap gap-3">
+            <button @click="startFullPack" :disabled="isSubmitting"
+                    class="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm flex items-center space-x-2 shadow cursor-pointer">
+              <i class="bi bi-git"></i>
+              <span>執行 XML 全藏庫同步下載 (Git Sync)</span>
+            </button>
+            <button @click="startXmlToObsidian" :disabled="isSubmitting"
+                    class="zen-btn-primary px-5 py-2.5 rounded-lg text-sm flex items-center space-x-2 shadow cursor-pointer"
+                    title="掃描 XML 目錄並全面轉化為 Obsidian Markdown (.md，含 Frontmatter、Callout、偈頌與校注)">
+              <i class="bi bi-markdown-fill"></i>
+              <span>轉換 XML 為 Obsidian 版本 MD</span>
+            </button>
+            <button @click="checkXmlRepoStatus" :disabled="isCheckingXmlStatus"
+                    class="zen-btn-secondary px-4 py-2.5 rounded-lg font-medium text-sm flex items-center space-x-1.5 cursor-pointer">
+              <i class="bi bi-search"></i>
+              <span>檢查本地狀態</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Tab: 路徑與環境設定 (Settings) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'settings'" class="zen-card p-6 space-y-6">
+        <h3 class="text-base font-bold zen-text-main">路徑與網路節點設定</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">預設下載目的地</label>
+            <input type="text" v-model="pipelineForm.destDir" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold zen-text-main mb-1">預設完成產出目錄</label>
+            <input type="text" v-model="pipelineForm.outputDir" class="w-full zen-input p-2.5 text-xs code-font">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">HTML 伺服器節點</label>
+              <input type="text" v-model="pipelineForm.htmlUrl" placeholder="預設 DILA stable" class="w-full zen-input p-2 text-xs code-font">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">PDF 伺服器節點</label>
+              <input type="text" v-model="pipelineForm.pdfUrl" placeholder="預設 DILA stable" class="w-full zen-input p-2 text-xs code-font">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">DOCX (Word) 伺服器節點</label>
+              <input type="text" v-model="pipelineForm.docxUrl" placeholder="預設 DILA stable (docx/T/T0099.zip)" class="w-full zen-input p-2 text-xs code-font">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">ODT 伺服器節點</label>
+              <input type="text" v-model="pipelineForm.odtUrl" placeholder="預設 DILA stable (odt/T/T0099.zip)" class="w-full zen-input p-2 text-xs code-font">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">DocuSky (XML) 伺服器節點</label>
+              <input type="text" v-model="pipelineForm.docuskyUrl" placeholder="預設 DILA stable (docusky/T0001.docusky.xml)" class="w-full zen-input p-2 text-xs code-font">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold zen-text-main mb-1">TXT+校注 伺服器節點</label>
+              <input type="text" v-model="pipelineForm.textNotesUrl" placeholder="預設 DILA stable (text-with-notes/T0001.txt.zip)" class="w-full zen-input p-2 text-xs code-font">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Tab: 全系統自我功能檢測與健康診斷 (Diagnostics) -->
+      <!-- ======================================================== -->
+      <div v-show="currentTab === 'diagnostics'" class="zen-card p-6 space-y-5">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-base font-bold zen-text-main flex items-center space-x-2">
+              <i class="bi bi-shield-check text-amber-500"></i>
+              <span>全系統自我功能診斷報告</span>
+            </h3>
+            <p class="text-xs zen-text-muted">13 項核心子系統端到端健康診斷與網路連線檢查</p>
+          </div>
+          <button @click="runDiagnostics" :disabled="isDiagnosing"
+                  class="zen-btn-primary px-4 py-2 rounded-lg text-xs shadow flex items-center space-x-2">
+            <i class="bi bi-arrow-repeat" :class="{'animate-spin': isDiagnosing}"></i>
+            <span>{{ isDiagnosing ? '檢測中...' : '執行全系統自我檢測' }}</span>
+          </button>
+        </div>
+
+        <!-- Summary Banner -->
+        <div v-if="diagnosticsReport" class="p-3.5 rounded-lg zen-subcard flex items-center justify-between text-xs border" style="border-color: var(--border-app);">
+          <div class="flex items-center space-x-4">
+            <span class="text-emerald-500 font-bold"><i class="bi bi-check-circle-fill me-1"></i>通過: {{ diagnosticsReport.passed }}/{{ diagnosticsReport.total_tests }} 項</span>
+            <span v-if="diagnosticsReport.warning > 0" class="text-amber-500"><i class="bi bi-exclamation-triangle-fill me-1"></i>警示: {{ diagnosticsReport.warning }}</span>
+            <span v-if="diagnosticsReport.failed > 0" class="text-rose-500 font-bold"><i class="bi bi-x-circle-fill me-1"></i>失敗: {{ diagnosticsReport.failed }}</span>
+          </div>
+          <span class="zen-text-muted font-mono">總耗時: {{ diagnosticsReport.total_duration_ms }}ms</span>
+        </div>
+
+        <!-- Diagnostic Table -->
+        <div class="overflow-x-auto rounded-lg border" style="border-color: var(--border-app);">
+          <table class="w-full text-left text-xs">
+            <thead class="zen-subcard zen-text-main uppercase font-medium">
+              <tr>
+                <th class="py-2.5 px-3 w-24">狀態</th>
+                <th class="py-2.5 px-3 w-28">類別</th>
+                <th class="py-2.5 px-3">檢測項目</th>
+                <th class="py-2.5 px-3 w-20 text-right">耗時</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--border-subtle);">
+              <tr v-if="!diagnosticsReport && !isDiagnosing">
+                <td colspan="4" class="py-6 text-center zen-text-muted">點擊上方按鈕執行全系統自檢</td>
+              </tr>
+              <tr v-for="res in diagnosticsReport?.results" :key="res.name" class="hover:bg-amber-500/5 transition-colors">
+                <td class="py-2.5 px-3">
+                  <span v-if="res.status === 'passed'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">✔ 通過</span>
+                  <span v-else-if="res.status === 'warning'" class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-500 border border-amber-500/30">▲ 警示</span>
+                  <span v-else class="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-500 border border-rose-500/30">✖ 失敗</span>
+                </td>
+                <td class="py-2.5 px-3 font-mono zen-text-muted">{{ res.category }}</td>
+                <td class="py-2.5 px-3">
+                  <div class="font-medium zen-text-main">{{ res.name }}</div>
+                  <div class="text-[11px] zen-text-muted">{{ res.message }}</div>
+                </td>
+                <td class="py-2.5 px-3 font-mono text-right zen-text-muted">{{ res.duration_ms }}ms</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- Collapsible Real-Time Terminal Console -->
+      <!-- ======================================================== -->
+      <div class="zen-card overflow-hidden">
+        <div class="zen-header px-4 py-2 flex items-center justify-between border-b" style="border-color: var(--border-app);">
+          <div class="flex items-center space-x-3">
+            <button @click="isLogDrawerOpen = !isLogDrawerOpen" class="text-xs font-bold zen-text-main flex items-center space-x-1.5 hover:zen-text-gold transition-colors">
+              <i :class="['bi', isLogDrawerOpen ? 'bi-chevron-down' : 'bi-chevron-right']"></i>
+              <i class="bi bi-terminal-fill zen-text-gold"></i>
+              <span>即時執行日誌串流 (SSE)</span>
+            </button>
+            <div v-show="isLogDrawerOpen" class="flex items-center space-x-1 zen-subcard rounded p-0.5 text-[11px]">
+              <button @click="logFilter = 'all'" :class="['px-2 py-0.5 rounded transition-colors', logFilter === 'all' ? 'bg-amber-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">全部</button>
+              <button @click="logFilter = 'info'" :class="['px-2 py-0.5 rounded transition-colors', logFilter === 'info' ? 'bg-blue-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">資訊</button>
+              <button @click="logFilter = 'success'" :class="['px-2 py-0.5 rounded transition-colors', logFilter === 'success' ? 'bg-emerald-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">成功</button>
+              <button @click="logFilter = 'error'" :class="['px-2 py-0.5 rounded transition-colors', logFilter === 'error' ? 'bg-rose-600 text-white font-medium shadow-sm' : 'zen-text-muted hover:zen-text-main']">錯誤</button>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 text-xs">
+            <label v-show="isLogDrawerOpen" class="flex items-center space-x-1 zen-text-muted cursor-pointer text-[11px]">
+              <input type="checkbox" v-model="autoScroll" class="rounded text-amber-600 focus:ring-amber-500">
+              <span>自動滾動</span>
+            </label>
+            <button v-if="systemStatus === 'busy'" @click="cancelActiveJob" class="px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600/40 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-1">
+              <i class="bi bi-stop-circle"></i>
+              <span>中斷任務</span>
+            </button>
+            <button v-show="isLogDrawerOpen" @click="copyLogs" class="zen-btn-secondary px-2.5 py-1 rounded text-xs" title="複製日誌">
+              <i class="bi bi-clipboard"></i>
+            </button>
+            <button v-show="isLogDrawerOpen" @click="clearLogs" class="zen-btn-secondary px-2.5 py-1 rounded text-xs" title="清空日誌">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Terminal Active Progress Bar Strip -->
+        <div v-if="activeJob && isLogDrawerOpen" class="px-4 py-1.5 border-b flex items-center justify-between text-[11px] font-mono"
+             style="background-color: var(--bg-card-hover); border-color: var(--border-app);">
+          <div class="flex items-center space-x-2 flex-1 mr-4">
+            <span class="zen-text-gold font-bold whitespace-nowrap">{{ activeJob.job_type.toUpperCase() }}:</span>
+            <div class="flex-1 rounded-full h-2 overflow-hidden" style="background-color: var(--bg-input);">
+              <div class="h-full rounded-full transition-all duration-300"
+                   style="background: linear-gradient(90deg, #f59e0b, #10b981);"
+                   :style="{ width: Math.max(2, activeJob.progress_percent) + '%' }"></div>
+            </div>
+            <span class="zen-text-main font-bold">{{ activeJob.progress_percent }}%</span>
+          </div>
+          <span class="zen-text-muted truncate max-w-xs">{{ activeJob.progress_message }}</span>
+        </div>
+
+        <div v-show="isLogDrawerOpen" ref="terminalRef" class="terminal-window p-4 h-64 overflow-y-auto code-font text-xs space-y-1">
+          <div v-if="filteredLogs.length === 0" class="zen-text-muted opacity-50 select-none">
+            系統運作日誌將即時顯示於此...
+          </div>
+          <div v-for="l in filteredLogs" :key="l.id" :class="['log-line', l.level]">
+            {{ l.text }}
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Add / Edit Preset Modal Dialog -->
+    <div v-if="presetModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div class="zen-card w-full max-w-lg p-6 space-y-4 shadow-2xl relative border" style="border-color: var(--accent-gold);">
+        <div class="flex items-center justify-between border-b pb-3" style="border-color: var(--border-app);">
+          <h3 class="text-base font-bold zen-text-main flex items-center gap-2">
+            <i class="bi bi-bookmark-star-fill zen-text-gold"></i>
+            <span>{{ editingPreset.id ? '編輯經論預設' : '新增常用經論預設' }}</span>
+          </h3>
+          <button @click="presetModalOpen = false" class="zen-text-muted hover:zen-text-main text-lg cursor-pointer">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3.5 text-xs">
+          <div>
+            <label class="block font-semibold zen-text-main mb-1">預設名稱 / 典籍組合標題 *</label>
+            <input type="text" v-model="editingPreset.title" placeholder="例如：三論宗根本部、華嚴宗五教章"
+                   class="w-full zen-input p-2.5 text-xs zen-text-main">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold zen-text-main mb-1">部類分類</label>
+              <input type="text" v-model="editingPreset.category" placeholder="例如：中觀三論、瑜伽唯識"
+                     class="w-full zen-input p-2 text-xs zen-text-main">
+            </div>
+            <div>
+              <label class="block font-semibold zen-text-main mb-1">徽章標籤</label>
+              <input type="text" v-model="editingPreset.badge" placeholder="例如：常用、精選、祖印"
+                     class="w-full zen-input p-2 text-xs zen-text-main">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold zen-text-main mb-1">簡要義理描述</label>
+            <input type="text" v-model="editingPreset.description" placeholder="簡述此典籍組合之研讀特色與重要性"
+                   class="w-full zen-input p-2 text-xs zen-text-main">
+          </div>
+
+          <div>
+            <label class="block font-semibold zen-text-main mb-1">常用經文編號列表 (每行一個) *</label>
+            <textarea v-model="editingPreset.default_ids" rows="5" placeholder="T1852&#10;T1853&#10;T1854"
+                      class="w-full zen-textarea p-2.5 text-xs code-font zen-text-gold"></textarea>
+            <p class="zen-text-muted text-[11px] mt-1">支援單號 (如 T1585)、區間 (如 T1500-T1505) 與雙字藏號 (如 JB234)。</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2.5 pt-3 border-t" style="border-color: var(--border-app);">
+          <button @click="presetModalOpen = false" class="zen-btn-secondary px-4 py-2 rounded-lg text-xs cursor-pointer">
+            取消
+          </button>
+          <button @click="savePreset" :disabled="isSavingPreset"
+                  class="zen-btn-primary px-5 py-2 rounded-lg text-xs font-bold flex items-center space-x-1.5 cursor-pointer">
+            <i class="bi bi-check-lg text-sm"></i>
+            <span>{{ isSavingPreset ? '儲存中...' : '儲存預設' }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Internationalization support
-        let currentLang = localStorage.getItem('language') || detectBrowserLanguage();
-        let translations = {};
+    <!-- Floating Toast Notification -->
+    <div v-if="showToast" class="fixed bottom-6 right-6 z-50 zen-card px-4 py-2.5 rounded-lg shadow-xl text-xs flex items-center space-x-2" style="border-color: var(--accent-gold);">
+      <i class="bi bi-info-circle-fill zen-text-gold"></i>
+      <span class="zen-text-main">{{ toastMessage }}</span>
+    </div>
 
-        function detectBrowserLanguage() {
-            // Get browser language
-            const browserLang = navigator.language || navigator.userLanguage;
+    <!-- Footer -->
+    <footer class="mt-auto py-4 border-t text-center text-xs zen-text-muted" style="border-color: var(--border-app);">
+      CBETA Sutra Downloader & Processor 2.0 · 漢語大乘佛教數位人文研讀平台
+    </footer>
+  </div>
 
-            // Map browser language to supported languages
-            if (browserLang.startsWith('zh')) {
-                return 'zh-TW';
-            }
-
-            // Default to English
-            return 'en';
-        }
-
-        async function loadLanguage(lang) {
-            try {
-                const response = await fetch(`/static/lang/${lang}.json`);
-                translations = await response.json();
-                applyTranslations();
-                localStorage.setItem('language', lang);
-                currentLang = lang;
-            } catch (e) {
-                console.error('Error loading language file:', e);
-            }
-        }
-
-        function applyTranslations() {
-            // Apply translations to elements with data-i18n attribute
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (translations[key]) {
-                    el.textContent = translations[key];
-                }
-            });
-
-            // Apply translations to placeholders
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.getAttribute('data-i18n-placeholder');
-                if (translations[key]) {
-                    el.placeholder = translations[key];
-                }
-            });
-        }
-
-        // Initialize language
-        document.addEventListener('DOMContentLoaded', () => {
-            const selector = document.getElementById('language-selector');
-            selector.value = currentLang;
-            loadLanguage(currentLang);
-
-            selector.addEventListener('change', (e) => {
-                loadLanguage(e.target.value);
-            });
-        });
-
-        const logArea = document.getElementById('log-area');
-
-        function appendLog(msg) {
-            if (msg === ".") {
-                const lastDiv = logArea.lastElementChild;
-                if (lastDiv) {
-                    lastDiv.textContent += ".";
-                    logArea.scrollTop = logArea.scrollHeight;
-                    return;
-                }
-            }
-            const div = document.createElement('div');
-            div.textContent = msg;
-            logArea.appendChild(div);
-            logArea.scrollTop = logArea.scrollHeight;
-        }
-
-        // Connect to SSE for logs
-        const evtSource = new EventSource("/logs");
-        evtSource.onmessage = function (event) {
-            const logs = JSON.parse(event.data);
-            logs.forEach(appendLog);
-        };
-
-        async function startDownload() {
-            const idList = document.getElementById('id-list').value;
-            const destDir = document.getElementById('dest-dir').value;
-            const exampleUrl = document.getElementById('example-url').value;
-            const htmlUrl = document.getElementById('html-url').value;
-            const pdfUrl = document.getElementById('pdf-url').value;
-            const epubUrl = document.getElementById('epub-url').value;
-            const mobiUrl = document.getElementById('mobi-url').value;
-
-            // Collect selected formats
-            const formats = [];
-            if (document.getElementById('fmt-txt').checked) formats.push('txt');
-            if (document.getElementById('fmt-html').checked) formats.push('html');
-            if (document.getElementById('fmt-pdf').checked) formats.push('pdf');
-            if (document.getElementById('fmt-epub').checked) formats.push('epub');
-            if (document.getElementById('fmt-mobi').checked) formats.push('mobi');
-
-            if (!idList || !destDir) {
-                alert("Please fill in all required fields");
-                return;
-            }
-
-            if (formats.length === 0) {
-                alert("Please select at least one format");
-                return;
-            }
-
-            try {
-                const res = await fetch('/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_list: idList,
-                        dest_dir: destDir,
-                        example_url: exampleUrl,
-                        html_url: htmlUrl,
-                        pdf_url: pdfUrl,
-                        epub_url: epubUrl,
-                        mobi_url: mobiUrl,
-                        formats: formats
-                    })
-                });
-                const data = await res.json();
-                if (data.status === 'error') alert(data.message);
-            } catch (e) {
-                alert("Error starting download: " + e);
-            }
-        }
-
-        async function startProcess() {
-            const projectDir = document.getElementById('project-dir').value;
-            const removeZip = document.getElementById('remove-zip').checked;
-
-            if (!projectDir) {
-                alert("Please fill in all fields");
-                return;
-            }
-
-            try {
-                const res = await fetch('/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ project_dir: projectDir, remove_zip: removeZip })
-                });
-                const data = await res.json();
-                if (data.status === 'error') alert(data.message);
-            } catch (e) {
-                alert("Error starting process: " + e);
-            }
-        }
-
-        async function startConvertMD() {
-            const projectDir = document.getElementById('project-dir').value;
-
-            if (!projectDir) {
-                alert("Please select a Project directory");
-                return;
-            }
-
-            if (!confirm("This will convert all .txt files in the 'complete' folder to .md and replace '#' with '//'. Continue?")) {
-                return;
-            }
-
-            try {
-                const res = await fetch('/convert_md', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ project_dir: projectDir })
-                });
-                const data = await res.json();
-                if (data.status === 'error') alert(data.message);
-            } catch (e) {
-                alert("Error starting conversion: " + e);
-            }
-        }
-
-        async function startCompleteTextPack() {
-            const destDir = document.getElementById('dest-dir').value;
-            const packUrl = document.getElementById('complete-pack-url').value;
-            const convertMd = document.getElementById('convert-md').checked;
-
-            if (!destDir || !packUrl) {
-                alert("Please check Settings and ensure Download Destination and Complete Text Pack URL are set.");
-                return;
-            }
-
-            if (!confirm("This process will download a large file, unzip it, and process thousands of files. It may take a long time. Continue?")) {
-                return;
-            }
-
-            try {
-                const res = await fetch('/complete_process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        dest_dir: destDir,
-                        pack_url: packUrl,
-                        convert_md: convertMd
-                    })
-                });
-                const data = await res.json();
-                if (data.status === 'error') alert(data.message);
-            } catch (e) {
-                alert("Error starting complete process: " + e);
-            }
-        }
-    </script>
+  <!-- App Script -->
+  <script src="/static/js/app.js"></script>
 </body>
-
 </html>

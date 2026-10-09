@@ -2,14 +2,27 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.venv/
+env/
 venv/
-.env
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Project specific
+# CBETA Data
 downloads/
+downloads-xml/
 complete/
+data/jobs/
 *.zip
+*.txt
+*.epub
+*.mobi
+*.pdf
 
-# OS specific
+# OS & IDE
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/

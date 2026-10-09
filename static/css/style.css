@@ -1,0 +1,264 @@
+/* ==========================================================================
+   CBETAfetch 2.0 - Buddhist Digital Humanities Theme Stylesheet
+   禪風數位人文主題色彩系統：禪意深空 (Zen Dark)、明朗素雅 (Scholastic Light)、貝葉古風 (Gruvbox)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --font-serif: 'Noto Serif TC', 'Songti SC', 'Source Han Serif TC', serif;
+  --font-mono: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+
+  /* ==========================================================================
+     Theme 1: 🌙 禪意深空 (Zen Dark - Default)
+     曜黑夜幕、琉璃深青、泥金沉香
+     ========================================================================== */
+  --bg-app: #080c14;
+  --bg-header: #0e1526;
+  --bg-stepper: #0a0f1b;
+  --bg-card: #121b2f;
+  --bg-card-hover: #18243e;
+  --bg-subcard: #17223b;
+  --bg-input: #0a101d;
+  --border-app: rgba(245, 158, 11, 0.18);
+  --border-strong: rgba(245, 158, 11, 0.42);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --text-inverse: #0f172a;
+
+  --accent-gold: #f59e0b;
+  --accent-gold-hover: #d97706;
+  --accent-gold-glow: rgba(245, 158, 11, 0.28);
+  --accent-gold-bg: rgba(245, 158, 11, 0.12);
+
+  --btn-secondary-bg: #1c2742;
+  --btn-secondary-hover: #263558;
+  --terminal-bg: #060911;
+  --badge-bg: rgba(245, 158, 11, 0.18);
+  --badge-text: #fbbf24;
+}
+
+/* ==========================================================================
+   Theme 2: ☀️ 明朗素雅 (Scholastic Light)
+   徽州松煙、白宣古墨、米褐竹紙、朱砂印泥（極致護眼）
+   ========================================================================== */
+body.theme-light {
+  --bg-app: #f7f4ee;
+  --bg-header: #ffffff;
+  --bg-stepper: #f0ebe0;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fcfbfa;
+  --bg-subcard: #f2ece0;
+  --bg-input: #fcfbf9;
+  --border-app: #ded6c9;
+  --border-strong: #c8bdac;
+  --border-subtle: #eae4d8;
+
+  --text-main: #1e2024;
+  --text-muted: #5e574d;
+  --text-dim: #8c8273;
+  --text-inverse: #ffffff;
+
+  --accent-gold: #b45309;
+  --accent-gold-hover: #92400e;
+  --accent-gold-glow: rgba(180, 83, 9, 0.20);
+  --accent-gold-bg: rgba(180, 83, 9, 0.08);
+
+  --btn-secondary-bg: #e8e1d3;
+  --btn-secondary-hover: #ddd5c4;
+  --terminal-bg: #1e2024;
+  --badge-bg: rgba(180, 83, 9, 0.12);
+  --badge-text: #92400e;
+}
+
+/* ==========================================================================
+   Theme 3: 🍂 貝葉古風 (Sutra Gruvbox)
+   梵夾貝葉、敦煌壁畫、古木檀香、菩提正金
+   ========================================================================== */
+body.theme-gruvbox {
+  --bg-app: #1d2021;
+  --bg-header: #282828;
+  --bg-stepper: #212323;
+  --bg-card: #32302f;
+  --bg-card-hover: #3c3836;
+  --bg-subcard: #3c3836;
+  --bg-input: #232525;
+  --border-app: rgba(215, 153, 33, 0.25);
+  --border-strong: rgba(250, 189, 47, 0.50);
+  --border-subtle: rgba(215, 153, 33, 0.15);
+
+  --text-main: #fbf1c7;
+  --text-muted: #a89984;
+  --text-dim: #7c6f64;
+  --text-inverse: #1d2021;
+
+  --accent-gold: #fabd2f;
+  --accent-gold-hover: #d79921;
+  --accent-gold-glow: rgba(250, 189, 47, 0.25);
+  --accent-gold-bg: rgba(250, 189, 47, 0.14);
+
+  --btn-secondary-bg: #45403d;
+  --btn-secondary-hover: #504945;
+  --terminal-bg: #18191a;
+  --badge-bg: rgba(250, 189, 47, 0.16);
+  --badge-text: #fabd2f;
+}
+
+/* Base Document Styling */
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.buddhist-font {
+  font-family: var(--font-serif);
+}
+
+.code-font {
+  font-family: var(--font-mono);
+}
+
+/* Theme Component Classes */
+.zen-header {
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-app);
+}
+
+.zen-stepper-bar {
+  background-color: var(--bg-stepper);
+  border-top: 1px solid var(--border-app);
+}
+
+.zen-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-app);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.25s ease;
+}
+.zen-card:hover {
+  border-color: var(--border-strong);
+}
+
+.zen-subcard {
+  background-color: var(--bg-subcard);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.625rem;
+  transition: all 0.2s ease;
+}
+.zen-subcard:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-card-hover);
+}
+.zen-subcard.selected {
+  border-color: var(--accent-gold);
+  background-color: var(--accent-gold-bg);
+  box-shadow: 0 0 12px var(--accent-gold-glow);
+}
+
+.zen-input, .zen-textarea {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-app);
+  color: var(--text-main);
+  border-radius: 0.5rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.zen-input:focus, .zen-textarea:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px var(--accent-gold-glow);
+  outline: none;
+}
+
+.zen-text-main {
+  color: var(--text-main);
+}
+
+.zen-text-muted {
+  color: var(--text-muted);
+}
+
+.zen-text-gold {
+  color: var(--accent-gold);
+}
+
+.zen-btn-primary {
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%);
+  color: var(--text-inverse);
+  font-weight: 700;
+  box-shadow: 0 4px 14px -2px var(--accent-gold-glow);
+  transition: all 0.2s ease;
+}
+.zen-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 18px -1px var(--accent-gold-glow);
+}
+
+.zen-btn-secondary {
+  background-color: var(--btn-secondary-bg);
+  border: 1px solid var(--border-app);
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+.zen-btn-secondary:hover:not(:disabled) {
+  background-color: var(--btn-secondary-hover);
+  border-color: var(--border-strong);
+}
+
+.zen-badge {
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  border: 1px solid var(--border-app);
+}
+
+.zen-tab-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+}
+.zen-tab-btn:hover {
+  color: var(--text-main);
+}
+.zen-tab-btn.active {
+  color: var(--accent-gold);
+  border-bottom-color: var(--accent-gold);
+  font-weight: 700;
+}
+
+/* Terminal Log Stream Window */
+.terminal-window {
+  background-color: var(--terminal-bg);
+  border: 1px solid var(--border-app);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  color: #e2e8f0;
+}
+
+.log-line {
+  line-height: 1.55;
+  word-break: break-all;
+}
+.log-line.error { color: #f87171; }
+.log-line.success { color: #4ade80; }
+.log-line.info { color: #60a5fa; }
+.log-line.warning { color: #fbbf24; }
+.log-line.progress { color: #38bdf8; font-weight: 600; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-gold);
+}

@@ -1,0 +1,29 @@
+{
+  "id": "agama",
+  "title": "根本阿含部類",
+  "category": "原始根本",
+  "badge": "正法久住",
+  "description": "初期佛教佛陀親炙言教，四阿含根本聖典選輯",
+  "sutras": [
+    {
+      "id": "T0001",
+      "name": "長阿含經",
+      "vols": "22卷",
+      "author": "後秦 佛陀耶舍共竺佛念譯"
+    },
+    {
+      "id": "T0026",
+      "name": "中阿含經",
+      "vols": "60卷",
+      "author": "東晉 僧伽提婆譯"
+    },
+    {
+      "id": "T0099",
+      "name": "雜阿含經",
+      "vols": "50卷",
+      "author": "劉宋 求那跋陀羅譯"
+    }
+  ],
+  "default_ids": "T0001\nT0026\nT0099",
+  "is_custom": false
+}

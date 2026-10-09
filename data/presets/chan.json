@@ -1,0 +1,23 @@
+{
+  "id": "chan",
+  "title": "禪宗祖師要籍",
+  "category": "禪門祖印",
+  "badge": "直指人心",
+  "description": "東土祖師真傳心印，不立文字，見性成佛之宗門寶鑑",
+  "sutras": [
+    {
+      "id": "T2008",
+      "name": "六祖大師法寶壇經",
+      "vols": "1卷",
+      "author": "唐 惠能大師說"
+    },
+    {
+      "id": "T2076",
+      "name": "景德傳燈錄",
+      "vols": "30卷",
+      "author": "宋 道原纂"
+    }
+  ],
+  "default_ids": "T2008\nT2076",
+  "is_custom": false
+}

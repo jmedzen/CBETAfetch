@@ -1,0 +1,29 @@
+{
+  "id": "rare_canons",
+  "title": "嘉興藏與卍續藏珍稀論著",
+  "category": "明清嘉興",
+  "badge": "雙字藏號",
+  "description": "嘉興藏方冊本與續藏珍稀注疏（測試雙字元 JB、ZS 藏號解析能力）",
+  "sutras": [
+    {
+      "id": "JB234",
+      "name": "慈恩宗規",
+      "vols": "1卷",
+      "author": "明 嘉興大藏經"
+    },
+    {
+      "id": "JB235",
+      "name": "慈恩傳略",
+      "vols": "1卷",
+      "author": "明 嘉興大藏經"
+    },
+    {
+      "id": "X0367",
+      "name": "金剛經解註",
+      "vols": "1卷",
+      "author": "卍新纂續藏經"
+    }
+  ],
+  "default_ids": "JB234\nJB235\nX0367",
+  "is_custom": false
+}
