@@ -78,12 +78,15 @@ def test_convert_xml_file_to_obsidian_md(temp_dir):
     with open(out_path, "r", encoding="utf-8") as f:
         md = f.read()
 
-    # 1. YAML Frontmatter check (No tags)
+    # 1. YAML Frontmatter check (Clean frontmatter - no tags, no canon, no vol, no no)
     assert "title: \"般若波羅蜜多心經\"" in md
     assert "cbeta_id: \"T08n0251\"" in md
     assert "author: \"唐 玄奘譯\"" in md
     assert "tags:" not in md
     assert "- CBETA" not in md
+    assert "canon:" not in md
+    assert "vol:" not in md
+    assert "no:" not in md
 
     # 2. Callout check
     assert "> [!info] 經文典籍資訊" in md

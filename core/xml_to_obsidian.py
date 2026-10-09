@@ -133,13 +133,10 @@ class CBETAXmlToObsidianConverter:
     def convert(self, include_line_anchors: bool = False, include_page_marks: bool = False) -> str:
         lines = []
 
-        # 1. Obsidian YAML Frontmatter (No tags)
+        # 1. Obsidian YAML Frontmatter (Clean frontmatter)
         lines.append("---")
         lines.append(f"title: \"{self.title}\"")
         lines.append(f"cbeta_id: \"{self.sutra_id}\"")
-        lines.append(f"canon: \"{self.canon}\"")
-        lines.append(f"vol: \"{self.vol}\"")
-        lines.append(f"no: \"{self.no}\"")
         lines.append(f"author: \"{self.author}\"")
         lines.append(f"extent: \"{self.extent}\"")
         lines.append("---\n")
@@ -148,7 +145,7 @@ class CBETAXmlToObsidianConverter:
         lines.append(f"# {self.title}\n")
         lines.append("> [!info] 經文典籍資訊")
         lines.append(f"> - **經名**：{self.title}")
-        lines.append(f"> - **典籍編號**：{self.sutra_id} ({self.canon}藏 第 {self.vol} 冊 No. {self.no})")
+        lines.append(f"> - **典籍編號**：{self.sutra_id}")
         lines.append(f"> - **譯者/作者**：{self.author}")
         if self.extent:
             lines.append(f"> - **卷數**：{self.extent}")
