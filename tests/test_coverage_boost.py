@@ -108,3 +108,36 @@ def test_api_download_format_urls_and_example(client: TestClient, temp_dir):
         res = client.post("/api/download", json=payload)
         assert res.status_code == 200
         assert res.json()["status"] == "started"
+
+
+def test_job_engine_log_capping_memory_protection():
+    # Verify memory leak prevention: logs bounded to max_logs
+    engine = JobEngine(max_history=10, max_logs=15)
+    j = engine.create_job("test_job")
+
+    for i in range(50):
+        engine.add_log(j.job_id, f"Log entry {i}")
+
+    assert len(engine.global_logs) == 15
+    assert engine.global_logs[-1].endswith("Log entry 49")
+    assert len(j.logs) <= 1000
+
+
+def test_api_invalid_filenames_protection(client: TestClient):
+    # Path traversal protection
+    assert client.get("/api/complete/file?filename=.").status_code == 400
+    assert client.get("/api/complete/file?filename=..").status_code == 400
+    assert client.get("/api/complete/download?filename=.").status_code == 400
+    assert client.get("/api/complete/download?filename=..").status_code == 400
+
+
+def test_downloader_worker_exception_handled(temp_dir):
+    downloader = SutraDownloader(download_dir=temp_dir, max_workers=2)
+    # Simulate worker raising an uncaught exception in future
+    with patch.object(downloader, "download_file", side_effect=RuntimeError("Worker panic")):
+        summary = downloader.download_from_ids(ids=["T1585"], formats=["txt"])
+        assert summary.total == 1
+        assert summary.failed == 1
+        assert summary.succeeded == 0
+        assert "Worker panic" in summary.results[0].error
+

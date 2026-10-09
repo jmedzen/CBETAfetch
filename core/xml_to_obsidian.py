@@ -169,7 +169,22 @@ class CBETAXmlToObsidianConverter:
         full_md = re.sub(r'\n{3,}', '\n\n', full_md)
         return full_md
 
+    def close(self):
+        """Release ElementTree DOM memory immediately."""
+        if hasattr(self, 'root') and self.root is not None:
+            try:
+                self.root.clear()
+            except Exception:
+                pass
+        self.root = None
+        self.tree = None
+        self.gaiji_map.clear()
+        self.footnotes_list.clear()
+        self.rendered_headings.clear()
+
     def _process_node(self, node, level=2, include_line_anchors=False, include_page_marks=False) -> str:
+        if level > 60:
+            return ""
         chunks = []
 
         if node.text:
@@ -319,6 +334,7 @@ def convert_xml_file_to_obsidian_md(
     Convert a single CBETA TEI P5 XML file to an Obsidian Markdown file.
     Output filename format: {canon}{no.zfill(4)}《{title}》.md
     """
+    converter = None
     try:
         converter = CBETAXmlToObsidianConverter(xml_path)
         md_content = converter.convert(
@@ -340,6 +356,9 @@ def convert_xml_file_to_obsidian_md(
 
     except Exception as e:
         return False, str(e)
+    finally:
+        if converter:
+            converter.close()
 
 
 def convert_xml_directory_to_obsidian(

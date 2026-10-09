@@ -642,8 +642,11 @@ async def get_complete_file_content(filename: str, output_dir: Optional[str] = N
     If binary file (PDF, EPUB, DOCX, ODT, MOBI), returns metadata without attempting UTF-8 read.
     """
     safe_name = os.path.basename(filename)
+    if not safe_name or safe_name in ('.', '..'):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
     target_dir = os.path.abspath(output_dir) if output_dir else os.path.join(base_dir, "complete")
-    full_path = os.path.join(target_dir, safe_name)
+    full_path = os.path.normpath(os.path.join(target_dir, safe_name))
 
     if not os.path.isfile(full_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -683,8 +686,11 @@ async def get_complete_file_content(filename: str, output_dir: Optional[str] = N
 async def download_complete_file(filename: str, output_dir: Optional[str] = None):
     """Directly stream/download any file from complete directory to browser."""
     safe_name = os.path.basename(filename)
+    if not safe_name or safe_name in ('.', '..'):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
     target_dir = os.path.abspath(output_dir) if output_dir else os.path.join(base_dir, "complete")
-    full_path = os.path.join(target_dir, safe_name)
+    full_path = os.path.normpath(os.path.join(target_dir, safe_name))
     if not os.path.isfile(full_path):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(full_path, filename=safe_name)

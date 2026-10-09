@@ -48,7 +48,7 @@ def convert_txt_file_to_md(
         output_path = f"{base_clean}.md"
 
     try:
-        with open(txt_path, "r", encoding="utf-8") as f:
+        with open(txt_path, "r", encoding="utf-8-sig", errors="replace") as f:
             content = f.read()
 
         md_content = sanitize_txt_for_markdown(content)

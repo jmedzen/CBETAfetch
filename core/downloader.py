@@ -320,7 +320,12 @@ class SutraDownloader:
                     summary.cancelled = True
                     break
 
-                res: DownloadResult = future.result()
+                try:
+                    res: DownloadResult = future.result()
+                except Exception as ex:
+                    f_url, f_fname = future_map.get(future, ("", "unknown"))
+                    res = DownloadResult(url=f_url, filename=f_fname, success=False, error=str(ex))
+
                 summary.results.append(res)
                 if res.success:
                     summary.succeeded += 1

@@ -150,16 +150,20 @@ def process_folder(
 
     # Combine volumes
     is_first_file = True
+    last_line_ended_with_newline = True
     with open(output_filepath, "w", encoding="utf-8") as out:
         for fpath in txt_list:
-            with open(fpath, "r", encoding="utf-8", errors="replace") as infile:
+            if not is_first_file and not last_line_ended_with_newline:
+                out.write("\n")
+            with open(fpath, "r", encoding="utf-8-sig", errors="replace") as infile:
                 for line in infile:
-                    # Keep comments only from the first file
-                    if line.startswith("#"):
+                    clean_l = line.lstrip("\ufeff")
+                    if clean_l.startswith("#"):
                         if is_first_file:
-                            out.write(line)
+                            out.write(clean_l)
                     else:
-                        out.write(line)
+                        out.write(clean_l)
+                    last_line_ended_with_newline = clean_l.endswith("\n")
             is_first_file = False
 
     log(f"Finished processing: {output_filepath}")
