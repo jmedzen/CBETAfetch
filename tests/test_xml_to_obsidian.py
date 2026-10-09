@@ -194,3 +194,48 @@ def test_convert_xml_detailed_features(temp_dir):
     ok, err = convert_xml_file_to_obsidian_md(os.path.join(temp_dir, "nonexistent.xml"))
     assert ok is False
 
+
+def test_convert_xml_with_empty_tags_no_strip_error(temp_dir):
+    """Test XML with empty <author></author> and empty tags does not crash with NoneType.strip()."""
+    empty_tag_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="T47n1994B">
+<teiHeader>
+    <fileDesc>
+        <titleStmt>
+            <title level="m">楊岐方會和尚後錄</title>
+            <author></author>
+        </titleStmt>
+        <publicationStmt>
+            <idno>
+                <idno type="canon">T</idno>
+                <idno type="vol"></idno>
+                <idno type="no"></idno>
+            </idno>
+        </publicationStmt>
+        <sourceDesc>
+            <extent></extent>
+        </sourceDesc>
+    </fileDesc>
+</teiHeader>
+<text>
+<body>
+    <p>經文測試內容</p>
+</body>
+</text>
+</TEI>"""
+
+    xml_path = os.path.join(temp_dir, "T47n1994B.xml")
+    with open(xml_path, "w", encoding="utf-8") as fp:
+        fp.write(empty_tag_xml)
+
+    ok, out_path = convert_xml_file_to_obsidian_md(xml_path, output_dir=temp_dir)
+    assert ok is True
+    assert os.path.exists(out_path)
+
+    with open(out_path, "r", encoding="utf-8") as fp:
+        content = fp.read()
+
+    assert "author: \"未知\"" in content
+    assert "楊岐方會和尚後錄" in content
+
+

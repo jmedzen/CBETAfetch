@@ -40,6 +40,14 @@ def clean_cjk_spacing(text: str) -> str:
     return text.strip()
 
 
+def safe_text(elem: Optional[ET.Element], default: str = "") -> str:
+    """Safely extract and strip text from an XML element, returning default if None or empty."""
+    if elem is not None and elem.text is not None:
+        val = elem.text.strip()
+        return val if val else default
+    return default
+
+
 class CBETAXmlToObsidianConverter:
     """
     Parses a single CBETA TEI P5 XML file and produces Obsidian Markdown.
@@ -73,22 +81,22 @@ class CBETAXmlToObsidianConverter:
             self.title = title_m.text.strip()
         else:
             title_main = r.find('.//tei:titleStmt/tei:title', NS)
-            self.title = title_main.text.strip() if title_main is not None else self.xml_path.stem
+            self.title = safe_text(title_main, default=self.xml_path.stem)
 
         author_elem = r.find('.//tei:titleStmt/tei:author', NS)
-        self.author = author_elem.text.strip() if author_elem is not None else "未知"
+        self.author = safe_text(author_elem, default="未知")
 
         idno_canon = r.find('.//tei:publicationStmt/tei:idno/tei:idno[@type="canon"]', NS)
         idno_vol = r.find('.//tei:publicationStmt/tei:idno/tei:idno[@type="vol"]', NS)
         idno_no = r.find('.//tei:publicationStmt/tei:idno/tei:idno[@type="no"]', NS)
 
-        self.canon = idno_canon.text.strip() if idno_canon is not None else "T"
-        self.vol = idno_vol.text.strip() if idno_vol is not None else ""
-        self.no = idno_no.text.strip() if idno_no is not None else ""
+        self.canon = safe_text(idno_canon, default="T")
+        self.vol = safe_text(idno_vol, default="")
+        self.no = safe_text(idno_no, default="")
         self.sutra_id = f"{self.canon}{self.vol.zfill(2)}n{self.no.zfill(4)}" if self.vol and self.no else self.xml_path.stem
 
         extent_elem = r.find('.//tei:extent', NS)
-        self.extent = extent_elem.text.strip() if extent_elem is not None else ""
+        self.extent = safe_text(extent_elem, default="")
 
     def _parse_gaiji(self):
         for char in self.root.findall('.//tei:charDecl/tei:char', NS):
